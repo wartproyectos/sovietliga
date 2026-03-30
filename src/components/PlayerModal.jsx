@@ -25,22 +25,22 @@ export function PlayerModal({ player, onClose }) {
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-[color:rgb(28_28_20/0.45)]"
         onClick={onClose}
         aria-label="Cerrar modal"
       />
 
-      <div className="relative w-full max-w-md rounded-xl bg-white shadow-xl border border-stone-200">
+      <div className="relative w-full max-w-md sv-card border-2 sv-ghost-line">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-stone-200">
+        <div className="flex items-start justify-between gap-4 px-5 py-4 bg-[var(--sv-on-surface)] text-[var(--sv-surface)]">
           <div>
-            <h3 className="text-lg font-semibold text-stone-900">{player.nombre}</h3>
-            <p className="text-sm text-stone-500">Posición #{player.pos}</p>
+            <h3 className="text-2xl font-bold">{player.nombre}</h3>
+            <p className="text-xs uppercase tracking-[0.1em] opacity-80">Posición #{player.pos}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-md px-2 py-1 text-stone-600 hover:bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#DC143C]"
+            className="shrink-0 px-2 py-1 text-[var(--sv-surface)] hover:bg-[color:rgb(253_250_235/0.15)] focus:outline-none"
             aria-label="Cerrar"
           >
             ✕
@@ -51,20 +51,20 @@ export function PlayerModal({ player, onClose }) {
         <div className="px-5 py-4">
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-stone-500">Partidos jugados</dt>
-              <dd className="text-xl font-bold text-stone-900">{player.pj}</dd>
+              <dt className="text-xs uppercase tracking-[0.1em] text-[var(--sv-on-surface-muted)]">Partidos jugados</dt>
+              <dd className="text-2xl font-bold text-[var(--sv-on-surface)]">{player.pj}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-stone-500">Victorias</dt>
-              <dd className="text-xl font-bold text-stone-900">{player.v}</dd>
+              <dt className="text-xs uppercase tracking-[0.1em] text-[var(--sv-on-surface-muted)]">Victorias</dt>
+              <dd className="text-2xl font-bold text-[var(--sv-on-surface)]">{player.v}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-stone-500">% Victorias</dt>
-              <dd className="text-xl font-bold text-stone-900">{player.porcentaje.toFixed(1)}%</dd>
+              <dt className="text-xs uppercase tracking-[0.1em] text-[var(--sv-on-surface-muted)]">% Victorias</dt>
+              <dd className="text-2xl font-bold text-[var(--sv-on-surface)]">{player.porcentaje.toFixed(1)}%</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-stone-500">Reservas</dt>
-              <dd className="text-xl font-bold text-stone-900">{player.reservas}</dd>
+              <dt className="text-xs uppercase tracking-[0.1em] text-[var(--sv-on-surface-muted)]">Reservas</dt>
+              <dd className="text-2xl font-bold text-[var(--sv-on-surface)]">{player.reservas}</dd>
             </div>
           </dl>
 
@@ -72,7 +72,7 @@ export function PlayerModal({ player, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg bg-[#DC143C] px-4 py-2 text-white text-sm font-medium hover:bg-[#b0102f] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#DC143C]"
+              className="sv-btn-primary px-4 py-2 text-sm"
             >
               Cerrar
             </button>

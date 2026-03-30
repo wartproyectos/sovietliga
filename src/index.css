@@ -1,1 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Work+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+:root {
+  --sv-primary: #9e0000;
+  --sv-primary-strong: #cc0000;
+  --sv-primary-ink: #930000;
+  --sv-surface: #fdfaeb;
+  --sv-surface-low: #f1eedf;
+  --sv-surface-high: #ffffff;
+  --sv-surface-dim: #dddacd;
+  --sv-on-surface: #1c1c14;
+  --sv-on-surface-muted: #4b4b40;
+  --sv-tertiary: #705d00;
+}
+
+* {
+  border-radius: 0;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--sv-surface);
+  color: var(--sv-on-surface);
+  font-family: 'Work Sans', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+.sv-display {
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+}
+
+.sv-panel {
+  background: var(--sv-surface-low);
+}
+
+.sv-card {
+  background: var(--sv-surface-high);
+}
+
+.sv-ghost-line {
+  border-color: rgb(28 28 20 / 15%);
+}
+
+.sv-btn-primary {
+  background: linear-gradient(120deg, var(--sv-primary) 0%, var(--sv-primary-ink) 100%);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.sv-agit-strip {
+  height: 24px;
+  background: var(--sv-surface-dim);
+}

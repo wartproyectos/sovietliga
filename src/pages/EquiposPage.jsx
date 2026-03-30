@@ -35,6 +35,7 @@ export function EquiposPage({ clasificacion }) {
     Stefanov: { principal: 4, secundaria: 3 },
     Teleskov: { principal: 2, secundaria: 1 },
     Vinyalovic: { principal: 2, secundaria: 1 },
+    Xavi: { principal: 2, secundaria: 3 },
     Yuri: { principal: 1, secundaria: 2 },
   };
 
@@ -57,9 +58,18 @@ export function EquiposPage({ clasificacion }) {
     return pos ? POS_LABELS[pos] : null;
   }
 
-  // Jugadores disponibles ordenados alfabéticamente
-  const jugadoresDisponibles = useMemo(() => {
-    return [...clasificacion].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  // Jugadores disponibles agrupados por posición principal y ordenados alfabéticamente.
+  const jugadoresPorPosicion = useMemo(() => {
+    const grupos = { 1: [], 2: [], 3: [], 4: [], 5: [], otros: [] };
+    const sorted = [...clasificacion].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    for (const player of sorted) {
+      const pos = getPrincipalPos(player.nombre);
+      if ([1, 2, 3, 4, 5].includes(pos)) grupos[pos].push(player);
+      else grupos.otros.push(player);
+    }
+
+    return grupos;
   }, [clasificacion]);
 
   const togglePlayer = (nombre) => {
@@ -285,75 +295,117 @@ export function EquiposPage({ clasificacion }) {
 
   if (!clasificacion || clasificacion.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-md p-8 text-center text-stone-500">
-        <div className="text-3xl mb-3 animate-pulse">⚡</div>
+      <div className="sv-panel p-8 text-left text-[var(--sv-on-surface-muted)]">
+        <div className="text-3xl mb-3">◉</div>
         Cargando jugadores...
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-8">
+    <div className="flex flex-col gap-8 pb-8 px-4">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-xl font-bold text-stone-800">Generador de Equipos</h2>
-          <p className="text-sm text-stone-400">Selecciona 12 jugadores para equilibrar (seleccionados: {selectedNames.size}/12)</p>
+          <h2 className="text-4xl font-bold text-[var(--sv-on-surface)] leading-none">Generador de Equipos</h2>
+          <p className="text-sm text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] mt-2">Selecciona 12 jugadores para equilibrar (seleccionados: {selectedNames.size}/12)</p>
         </div>
       </div>
 
       {!generado ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {jugadoresDisponibles.map((player) => {
-              const selected = selectedNames.has(player.nombre);
-              const mainPos = getPrincipalPos(player.nombre);
-              const mainLabel = posLabelFromNumber(mainPos);
+        <div className="sv-panel overflow-hidden">
+          <div className="p-4 flex flex-col gap-4">
+            {[1, 2, 3, 4, 5].map((pos) => {
+              const players = jugadoresPorPosicion[pos];
+              if (!players || players.length === 0) return null;
+
               return (
-                <button
-                  key={player.nombre}
-                  onClick={() => togglePlayer(player.nombre)}
-                  disabled={!selected && selectedNames.size >= 12}
-                  className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all relative ${
-                    selected
-                      ? 'border-[#DC143C] bg-red-50 text-[#DC143C] font-semibold ring-1 ring-[#DC143C]'
-                      : 'border-stone-100 bg-white text-stone-600 hover:border-stone-200'
-                  } ${!selected && selectedNames.size >= 12 ? 'opacity-40 cursor-not-allowed' : ''}`}
-                >
-                  <span className="truncate text-sm flex-1">
-                    {player.nombre}
-                    {mainLabel ? ` · ${mainLabel} (${mainPos})` : ''}
-                  </span>
-                  {selected && <span className="text-xs">✔</span>}
-                </button>
+                <section key={pos} className="flex flex-col gap-2">
+                  <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--sv-on-surface-muted)]">
+                    {posLabelFromNumber(pos)} ({pos})
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {players.map((player) => {
+                      const selected = selectedNames.has(player.nombre);
+                      const mainPos = getPrincipalPos(player.nombre);
+                      const mainLabel = posLabelFromNumber(mainPos);
+                      return (
+                        <button
+                          key={player.nombre}
+                          onClick={() => togglePlayer(player.nombre)}
+                          disabled={!selected && selectedNames.size >= 12}
+                          className={`flex items-center gap-2 p-3 border text-left transition-all relative ${
+                            selected
+                              ? 'border-[var(--sv-primary)] bg-[color:rgb(204_0_0/0.08)] text-[var(--sv-primary)] font-semibold'
+                              : 'sv-ghost-line bg-[var(--sv-surface)] text-[var(--sv-on-surface-muted)] hover:bg-[var(--sv-surface-high)]'
+                          } ${!selected && selectedNames.size >= 12 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        >
+                          <span className="truncate text-sm flex-1">
+                            {player.nombre}
+                            {mainLabel ? ` · ${mainLabel} (${mainPos})` : ''}
+                          </span>
+                          {selected && <span className="text-xs">✔</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
               );
             })}
+
+            {jugadoresPorPosicion.otros.length > 0 && (
+              <section className="flex flex-col gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-stone-500">
+                  Sin posición definida
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {jugadoresPorPosicion.otros.map((player) => {
+                    const selected = selectedNames.has(player.nombre);
+                    return (
+                      <button
+                        key={player.nombre}
+                        onClick={() => togglePlayer(player.nombre)}
+                        disabled={!selected && selectedNames.size >= 12}
+                        className={`flex items-center gap-2 p-3 border text-left transition-all relative ${
+                          selected
+                            ? 'border-[var(--sv-primary)] bg-[color:rgb(204_0_0/0.08)] text-[var(--sv-primary)] font-semibold'
+                            : 'sv-ghost-line bg-[var(--sv-surface)] text-[var(--sv-on-surface-muted)] hover:bg-[var(--sv-surface-high)]'
+                        } ${!selected && selectedNames.size >= 12 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      >
+                        <span className="truncate text-sm flex-1">{player.nombre}</span>
+                        {selected && <span className="text-xs">✔</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
 
-          <div className="p-4 bg-stone-50 border-t border-stone-100 flex flex-col gap-4">
+          <div className="p-4 bg-[var(--sv-surface-dim)] flex flex-col gap-4">
             <button
               onClick={generarEquipos}
               disabled={selectedNames.size !== 12}
-              className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg shadow-red-100 flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+              className={`w-full py-4 font-bold text-lg flex items-center justify-center gap-2 transition-all ${
                 selectedNames.size === 12
-                  ? 'bg-[#DC143C] text-white hover:bg-red-700'
-                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                  ? 'sv-btn-primary'
+                  : 'bg-[#b9b6aa] text-[var(--sv-surface)] cursor-not-allowed'
               }`}
             >
-              🚀 Generar Combinación
+              Generar Combinación
             </button>
             {selectedNames.size < 12 && (
-              <p className="text-center text-xs text-stone-400">
+              <p className="text-center text-xs text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
                 Faltan {12 - selectedNames.size} jugadores por seleccionar
               </p>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4">
             {/* Equipo 1 */}
-            <div className="bg-white rounded-2xl shadow-md border-l-4 border-stone-900 overflow-hidden">
+            <div className="sv-card border-l-8 border-stone-900 overflow-hidden">
               <div className="bg-stone-900 px-4 py-3 flex justify-between items-center">
                 <h3 className="text-white font-bold flex items-center gap-2">
                   <span className="text-xl">⚫</span> Equipo Negro
@@ -363,7 +415,7 @@ export function EquiposPage({ clasificacion }) {
                 </span>
               </div>
               <div
-                className={`p-4 grid grid-cols-2 gap-3 rounded-b-2xl transition-colors ${
+                className={`p-4 grid grid-cols-2 gap-3 transition-colors ${
                   dragOverTeam === 'equipo1' ? 'bg-stone-100/70 ring-2 ring-stone-300' : ''
                 }`}
                 onDragOver={(e) => {
@@ -383,30 +435,30 @@ export function EquiposPage({ clasificacion }) {
                     draggable
                     onDragStart={() => handleDragStart('equipo1', p.nombre)}
                     onDragEnd={handleDragEnd}
-                    className="flex flex-col p-2 rounded-lg border border-stone-100 bg-white cursor-grab active:cursor-grabbing"
+                    className="flex flex-col p-2 border sv-ghost-line bg-[var(--sv-surface)] cursor-grab active:cursor-grabbing"
                   >
                     <span className="text-stone-800 font-medium">
                       {p.nombre}
                       {p.posPrincipal ? ` · ${posLabelFromNumber(p.posPrincipal)} (${p.posPrincipal})` : ''}
                     </span>
-                    <span className="text-[10px] text-stone-400 uppercase tracking-tighter">PJ: {p.pj} · {Number(p.porcentaje ?? 0).toFixed(1)}% V</span>
+                    <span className="text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-tighter">PJ: {p.pj} · {Number(p.porcentaje ?? 0).toFixed(1)}% V</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Equipo 2 */}
-            <div className="bg-white rounded-2xl shadow-md border-l-4 border-[#DC143C] overflow-hidden">
-              <div className="bg-red-50 px-4 py-3 flex justify-between items-center">
-                <h3 className="text-[#DC143C] font-bold flex items-center gap-2">
+            <div className="sv-card border-l-8 border-[var(--sv-primary-strong)] overflow-hidden">
+              <div className="bg-[var(--sv-primary)] px-4 py-3 flex justify-between items-center">
+                <h3 className="text-white font-bold flex items-center gap-2">
                   <span className="text-xl">🔴</span> Equipo Rojo
                 </h3>
-                <span className="text-xs font-semibold text-[#DC143C] px-2 py-0.5 bg-white rounded-full border border-red-100">
+                <span className="text-xs font-semibold text-[var(--sv-primary)] px-2 py-0.5 bg-white border border-[color:rgb(158_0_0/0.2)]">
                   Avg: {averagePct(generado.equipo2).toFixed(1)}% ({generado.equipo2.length} jug.)
                 </span>
               </div>
               <div
-                className={`p-4 grid grid-cols-2 gap-3 rounded-b-2xl transition-colors ${
+                className={`p-4 grid grid-cols-2 gap-3 transition-colors ${
                   dragOverTeam === 'equipo2' ? 'bg-red-50/80 ring-2 ring-red-200' : ''
                 }`}
                 onDragOver={(e) => {
@@ -426,13 +478,13 @@ export function EquiposPage({ clasificacion }) {
                     draggable
                     onDragStart={() => handleDragStart('equipo2', p.nombre)}
                     onDragEnd={handleDragEnd}
-                    className="flex flex-col p-2 rounded-lg border border-stone-100 bg-white cursor-grab active:cursor-grabbing"
+                    className="flex flex-col p-2 border sv-ghost-line bg-[var(--sv-surface)] cursor-grab active:cursor-grabbing"
                   >
                     <span className="text-stone-800 font-medium">
                       {p.nombre}
                       {p.posPrincipal ? ` · ${posLabelFromNumber(p.posPrincipal)} (${p.posPrincipal})` : ''}
                     </span>
-                    <span className="text-[10px] text-stone-400 uppercase tracking-tighter">PJ: {p.pj} · {Number(p.porcentaje ?? 0).toFixed(1)}% V</span>
+                    <span className="text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-tighter">PJ: {p.pj} · {Number(p.porcentaje ?? 0).toFixed(1)}% V</span>
                   </div>
                 ))}
               </div>
@@ -441,19 +493,19 @@ export function EquiposPage({ clasificacion }) {
 
           <button
             onClick={() => setGenerado(null)}
-            className="w-full py-3 bg-stone-100 text-stone-600 rounded-xl font-semibold hover:bg-stone-200 transition-colors"
+            className="w-full py-3 border-2 border-[var(--sv-primary)] text-[var(--sv-primary)] font-bold uppercase tracking-[0.08em] hover:bg-[color:rgb(158_0_0/0.08)] transition-colors"
           >
-            🔄 Resetear selección
+            Resetear selección
           </button>
         </div>
       )}
 
       {/* Explicación de lógica */}
-      <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 flex items-start gap-3">
-        <span className="text-lg">ℹ️</span>
+      <div className="bg-[var(--sv-surface-dim)] p-5 flex items-start gap-3">
+        <span className="text-lg text-[var(--sv-primary)]">★</span>
         <div>
-          <h4 className="text-sm font-bold text-amber-900 leading-none mb-1">Criterio de balanceo</h4>
-          <p className="text-xs text-amber-800 opacity-80 leading-relaxed">
+          <h4 className="text-sm font-bold text-[var(--sv-on-surface)] leading-none mb-2 uppercase tracking-[0.08em]">Criterio de balanceo</h4>
+          <p className="text-xs text-[var(--sv-on-surface)] leading-relaxed uppercase tracking-[0.04em]">
             Los equipos se optimizan para que encajen lo más posible en el esquema <b>1 jugador - 1 posición</b> usando la
             posición <b>principal</b> (y la <b>secundaria</b> como fallback), y además el balance de rendimiento por ranking (%V).
             El jugador de cambio también intenta ser de posiciones parecidas.

@@ -42,6 +42,10 @@ function buildHistorial(clasificacion) {
     }
 
     if (hasData) {
+      ganadores.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+      perdedores.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+      empate.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+      reservas.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
       jornadas.push({ numero: i + 1, ganadores, perdedores, empate, reservas });
     }
   }
@@ -56,14 +60,14 @@ function buildHistorial(clasificacion) {
 
 function PlayerBadge({ nombre, variant }) {
   const colors = {
-    win:     'bg-emerald-50 text-emerald-800 border border-emerald-200',
-    loss:    'bg-red-50 text-red-800 border border-red-200',
-    draw:    'bg-amber-50 text-amber-800 border border-amber-200',
-    reserve: 'bg-stone-100 text-stone-500 border border-stone-200',
+    win: 'bg-[var(--sv-primary)] text-white',
+    loss: 'bg-[var(--sv-surface)] text-[var(--sv-on-surface)]',
+    draw: 'bg-[#efe9c9] text-[var(--sv-on-surface)]',
+    reserve: 'bg-[var(--sv-surface-dim)] text-[var(--sv-on-surface)]',
   };
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[variant]}`}
+      className={`inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-[0.08em] ${colors[variant]}`}
     >
       {nombre}
     </span>
@@ -74,7 +78,7 @@ function TeamSection({ label, icon, players, variant, emptyMsg }) {
   if (!players || players.length === 0) return null;
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">
+      <p className="text-xs font-bold uppercase tracking-[0.11em] text-[var(--sv-on-surface-muted)] mb-2">
         {icon} {label}
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -106,30 +110,30 @@ function JornadaCard({ jornada }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
+    <div className="sv-panel overflow-hidden">
       {/* Header (siempre visible) */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-stone-50 transition-colors"
+        className="w-full px-6 py-5 flex items-center justify-between gap-3 hover:bg-[var(--sv-surface-low)] transition-colors text-left"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="shrink-0 w-9 h-9 rounded-full bg-[#DC143C]/10 flex items-center justify-center text-sm font-bold text-[#DC143C]">
+          <span className="shrink-0 w-11 h-11 bg-[var(--sv-primary)] text-white flex items-center justify-center text-sm font-bold">
             {numero}
           </span>
           <div className="text-left min-w-0">
-            <p className="text-sm font-semibold text-stone-800 truncate">
+            <p className="text-lg font-bold text-[var(--sv-on-surface)] truncate uppercase">
               Jornada {numero}
             </p>
-            <p className={`text-xs truncate ${resultColor}`}>{resultLabel}</p>
+            <p className={`text-xs truncate uppercase tracking-[0.08em] ${resultColor}`}>{resultLabel}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-stone-400">
+          <span className="text-xs text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
             {totalJugadores} jugaron · {reservas.length} res.
           </span>
           <span
-            className={`text-stone-400 transition-transform text-sm ${open ? 'rotate-180' : ''}`}
+            className={`text-[var(--sv-on-surface-muted)] transition-transform text-sm ${open ? 'rotate-180' : ''}`}
           >
             ▼
           </span>
@@ -138,7 +142,7 @@ function JornadaCard({ jornada }) {
 
       {/* Detalle expandible */}
       {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-stone-100 flex flex-col gap-3">
+        <div className="px-6 pb-5 pt-3 border-t sv-ghost-line flex flex-col gap-3">
           {ganadores.length > 0 && (
             <TeamSection
               label="Equipo ganador"
@@ -183,63 +187,34 @@ function JornadaCard({ jornada }) {
 
 export function HistorialPage({ clasificacion }) {
   const historial = useMemo(() => buildHistorial(clasificacion), [clasificacion]);
-  const [filter, setFilter] = useState('todas'); // 'todas' | 'con-resultado'
-
-  const filtered = useMemo(() => {
-    if (filter === 'con-resultado') {
-      return historial.filter(
-        (j) => j.ganadores.length > 0 || j.empate.length > 0
-      );
-    }
-    return historial;
-  }, [historial, filter]);
 
   if (!clasificacion || clasificacion.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-md p-8 text-center">
-        <div className="text-4xl mb-4">📅</div>
-        <p className="text-stone-500">Cargando historial...</p>
+      <div className="sv-panel p-8 text-left">
+        <div className="text-4xl mb-4">◪</div>
+        <p className="text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">Cargando historial...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Cabecera + filtro */}
+    <div className="flex flex-col gap-6 px-4">
+      {/* Cabecera */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h2 className="text-lg font-bold text-stone-800">Historial de Jornadas</h2>
-          <p className="text-sm text-stone-400">{historial.length} jornadas registradas</p>
-        </div>
-        <div className="flex gap-1 bg-stone-100 rounded-lg p-1 text-xs font-medium">
-          {[
-            { id: 'todas', label: 'Todas' },
-            { id: 'con-resultado', label: 'Con resultado' },
-          ].map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setFilter(id)}
-              className={`px-3 py-1.5 rounded-md transition-colors ${
-                filter === id
-                  ? 'bg-white text-[#DC143C] shadow-sm font-semibold'
-                  : 'text-stone-500 hover:text-stone-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          <h2 className="text-4xl font-bold text-[var(--sv-on-surface)] leading-none">Historial de Jornadas</h2>
+          <p className="text-sm text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] mt-2">{historial.length} jornadas registradas</p>
         </div>
       </div>
 
       {/* Lista de jornadas */}
-      {filtered.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center text-stone-400">
+      {historial.length === 0 ? (
+        <div className="sv-panel p-8 text-center text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
           No hay jornadas con resultado registrado.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map((j) => (
+          {historial.map((j) => (
             <JornadaCard key={j.numero} jornada={j} />
           ))}
         </div>
