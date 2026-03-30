@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"="width=device-width, initial-scale=1.0">
+    <title>Liga Soviet - Dashboard</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // PASO 1: Componente Principal
+        function LigaSoviet() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-orange-700 p-8">
+                    <div className="max-w-7xl mx-auto">
+                        {/* Header */}
+                        <header className="text-center mb-12">
+                            <h1 className="text-6xl font-bold text-yellow-300 mb-2" style={{textShadow: '3px 3px 6px rgba(0,0,0,0.5)'}}>
+                                ⭐ LIGA SOVIET ⭐
+                            </h1>
+                            <p className="text-yellow-100 text-xl">Baloncesto Amateur - Temporada 2024/25</p>
+                        </header>
+
+                        {/* Mensaje de Bienvenida */}
+                        <div className="bg-white rounded-lg shadow-2xl p-8 mb-8">
+                            <h2 className="text-3xl font-bold text-red-800 mb-4">🏀 Bienvenido al Dashboard</h2>
+                            <p className="text-gray-700 text-lg mb-4">
+                                Esta es la aplicación web de la Liga Soviet. Aquí podrás:
+                            </p>
+                            <ul className="list-disc list-inside text-gray-700 space-y-2 mb-6">
+                                <li>Ver estadísticas de todos los jugadores</li>
+                                <li>Consultar el ranking de victorias</li>
+                                <li>Analizar la participación en cada jornada</li>
+                                <li>Generar equipos equilibrados automáticamente</li>
+                            </ul>
+                            
+                            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                                <p className="text-yellow-800 font-semibold">
+                                    📋 Próximo paso: Conectar con Google Sheets
+                                </p>
+                                <p className="text-yellow-700 text-sm mt-2">
+                                    Necesitamos configurar la conexión con tu documento de Google Sheets para mostrar los datos reales.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Cards de ejemplo */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-white rounded-lg shadow-lg p-6">
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">📊 Estadísticas</h3>
+                                <p className="text-gray-600">Ranking completo de jugadores con victorias, partidos jugados y más.</p>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg shadow-lg p-6">
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">🔄 Auto-Equipos</h3>
+                                <p className="text-gray-600">Genera equipos equilibrados automáticamente según criterios personalizados.</p>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg shadow-lg p-6">
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">📅 Historial</h3>
+                                <p className="text-gray-600">Consulta todas las jornadas jugadas y los resultados históricos.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Renderizar la aplicación
+        ReactDOM.render(<LigaSoviet />, document.getElementById('root'));
+    </script>
+</body>
+</html>
