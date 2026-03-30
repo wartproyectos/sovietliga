@@ -13,4 +13,7 @@ export const EXCLUDED_PLAYERS = new Set([
   'Nuevo 2',
   'Nuevo 3',
   'Amigos',
+  'Toni Primo',
+  'Amigo 1',
+  'Amigo 2',
 ]);

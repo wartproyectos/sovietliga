@@ -184,7 +184,8 @@ function buildStatsFromParticipationRows(rows) {
 
     const nombre = String(values[nameIdx]).trim();
     const partidosJugados = toNumber(values[2]) ?? 0;
-    const reservas = toNumber(values[3]) ?? 0;
+    // En participación CSV, la columna E contiene el total de reservas.
+    const reservas = toNumber(values[4]) ?? 0;
 
     // En participación, la jornada 1 está en columna F.
     const jornadaParticipacion = (values.slice(5) ?? []).map((v) => {

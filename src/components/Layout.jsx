@@ -3,7 +3,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 const NAV_ITEMS = [
   { to: '/', label: 'Clasificacion', icon: '▥' },
   { to: '/historial', label: 'Historial', icon: '◪' },
-  { to: '/equipos', label: 'Equipos', icon: '◉' },
+  { to: '/equipos', label: 'Equipos', icon: '⚡' },
 ];
 
 export function Layout({ jornada }) {
@@ -13,7 +13,6 @@ export function Layout({ jornada }) {
       <header className="bg-[var(--sv-surface)] text-[var(--sv-on-surface)] border-b-4 border-[var(--sv-on-surface)]">
         <div className="max-w-3xl mx-auto px-4 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-[var(--sv-primary-strong)] text-xl leading-none" aria-hidden>★</span>
             <h1 className="text-[33px] font-bold leading-none text-[var(--sv-primary)]">
               Liga Soviet 2025/2026
             </h1>

@@ -118,9 +118,6 @@ function JornadaCard({ jornada }) {
         className="w-full px-6 py-5 flex items-center justify-between gap-3 hover:bg-[var(--sv-surface-low)] transition-colors text-left"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="shrink-0 w-11 h-11 bg-[var(--sv-primary)] text-white flex items-center justify-center text-sm font-bold">
-            {numero}
-          </span>
           <div className="text-left min-w-0">
             <p className="text-lg font-bold text-[var(--sv-on-surface)] truncate uppercase">
               Jornada {numero}
