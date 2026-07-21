@@ -1,8 +1,8 @@
 import { Outlet, NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Clasificacion', icon: '▥' },
-  { to: '/historial', label: 'Historial', icon: '◪' },
+  { to: '/', label: 'Clasificacion', icon: '📊' },
+  { to: '/historial', label: 'Historial', icon: '🕑' },
   { to: '/equipos', label: 'Equipos', icon: '⚡' },
 ];
 
