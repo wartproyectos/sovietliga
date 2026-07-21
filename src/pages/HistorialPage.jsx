@@ -185,6 +185,10 @@ function JornadaCard({ jornada }) {
 export function HistorialPage({ clasificacion }) {
   const historial = useMemo(() => buildHistorial(clasificacion), [clasificacion]);
 
+  // Número de la última jornada jugada (historial está ordenado de más reciente
+  // a más antigua, así que el primer elemento tiene el número más alto).
+  const totalJornadas = historial.length > 0 ? historial[0].numero : 0;
+
   if (!clasificacion || clasificacion.length === 0) {
     return (
       <div className="sv-panel p-8 text-left">
@@ -200,7 +204,7 @@ export function HistorialPage({ clasificacion }) {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h2 className="text-4xl font-bold text-[var(--sv-on-surface)] leading-none">Historial de Jornadas</h2>
-          <p className="text-sm text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] mt-2">{historial.length} jornadas registradas</p>
+          <p className="text-sm text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] mt-2">{totalJornadas} jornadas registradas</p>
         </div>
       </div>
 
