@@ -14,7 +14,7 @@ function App() {
         <Route element={<Layout jornada={jornada} />}>
           <Route
             index
-            element={<ClasificacionPage clasificacion={clasificacion} loading={loading} error={error} />}
+            element={<ClasificacionPage clasificacion={clasificacion} loading={loading} error={error} jornada={jornada} />}
           />
           <Route path="historial" element={<HistorialPage clasificacion={clasificacion} />} />
           <Route path="equipos" element={<EquiposPage clasificacion={clasificacion} />} />

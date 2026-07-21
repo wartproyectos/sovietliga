@@ -12,6 +12,8 @@
   --sv-on-surface: #1c1c14;
   --sv-on-surface-muted: #4b4b40;
   --sv-tertiary: #705d00;
+  --sv-gold: #c9a227;
+  --sv-gold-strong: #a8851a;
 }
 
 * {
@@ -64,4 +66,24 @@ h4,
 .sv-agit-strip {
   height: 24px;
   background: var(--sv-surface-dim);
+}
+
+.sv-champion {
+  background: linear-gradient(90deg, rgb(201 162 39 / 30%) 0%, rgb(201 162 39 / 8%) 100%) !important;
+  box-shadow: inset 5px 0 0 var(--sv-gold-strong);
+}
+
+.sv-champion-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  background: var(--sv-gold-strong);
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15em 0.5em;
+  line-height: 1;
+  white-space: nowrap;
 }

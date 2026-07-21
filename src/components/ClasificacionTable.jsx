@@ -1,5 +1,6 @@
 import { Fragment, useState, useMemo } from 'react';
 import { PlayerModal } from './PlayerModal';
+import { CHAMPION_JORNADA } from '../constants';
 
 const SORT_ARROW = { asc: ' ▲', desc: ' ▼' };
 
@@ -19,7 +20,7 @@ function SortableHeader({ label, sortKey, sort, onSort, className = '' }) {
   );
 }
 
-export function ClasificacionTable({ clasificacion }) {
+export function ClasificacionTable({ clasificacion, jornada }) {
   // Orden inicial: %V de mayor a menor (la cabecera de "%V" usa sortKey="porcentaje")
   const [sort, setSort] = useState({ key: 'porcentaje', dir: 'desc' });
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -58,6 +59,19 @@ export function ClasificacionTable({ clasificacion }) {
     [sorted]
   );
 
+  // Campeón: líder oficial (%V, con mínimo de 10 PJ) una vez alcanzada la jornada
+  // definida en CHAMPION_JORNADA. Se calcula según la clasificación real,
+  // independientemente del orden que el usuario aplique a la tabla.
+  const championNombre = useMemo(() => {
+    if (!jornada || jornada < CHAMPION_JORNADA) return null;
+    const eligible = clasificacion.filter((p) => Number(p.pj ?? 0) >= 10);
+    if (eligible.length === 0) return null;
+    const leader = [...eligible].sort(
+      (a, b) => Number(b.porcentaje ?? 0) - Number(a.porcentaje ?? 0)
+    )[0];
+    return leader?.nombre ?? null;
+  }, [clasificacion, jornada]);
+
   return (
     <>
       <section className="sv-panel overflow-hidden">
@@ -87,7 +101,9 @@ export function ClasificacionTable({ clasificacion }) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((row, idx) => (
+              {sorted.map((row, idx) => {
+                const isChampion = championNombre && row.nombre === championNombre;
+                return (
                 <Fragment key={row.nombre}>
                   {cutoffIdx > 0 && idx === cutoffIdx && (
                     <tr className="bg-[var(--sv-surface)]">
@@ -96,15 +112,18 @@ export function ClasificacionTable({ clasificacion }) {
                       </td>
                     </tr>
                   )}
-                  <tr className={`${idx % 2 === 0 ? 'bg-[var(--sv-surface)]' : 'bg-[var(--sv-surface-low)]'} border-b sv-ghost-line transition-colors`}>
-                    <td className="px-2 sm:px-4 py-2.5 sm:py-4 font-bold text-[var(--sv-on-surface)] text-lg sm:text-3xl">{String(row.pos).padStart(2, '0')}</td>
+                  <tr className={`${isChampion ? 'sv-champion' : idx % 2 === 0 ? 'bg-[var(--sv-surface)]' : 'bg-[var(--sv-surface-low)]'} border-b sv-ghost-line transition-colors`}>
+                    <td className={`px-2 sm:px-4 py-2.5 sm:py-4 font-bold text-lg sm:text-3xl ${isChampion ? 'text-[var(--sv-gold-strong)]' : 'text-[var(--sv-on-surface)]'}`}>{isChampion ? '★' : String(row.pos).padStart(2, '0')}</td>
                     <td className="px-2 sm:px-4 py-2">
                       <button
                         type="button"
                         className="font-bold uppercase text-[11px] sm:text-base text-[var(--sv-on-surface)] text-left w-full hover:text-[var(--sv-primary-strong)] transition-colors focus:outline-none"
                         onClick={() => setSelectedPlayer(row)}
                       >
-                        {row.nombre}
+                        <span className="inline-flex items-center gap-2 flex-wrap">
+                          {row.nombre}
+                          {isChampion && <span className="sv-champion-badge text-[9px] sm:text-[11px]">★ Campeón</span>}
+                        </span>
                       </button>
                     </td>
                     <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface)] text-base sm:text-3xl font-medium">{row.pj}</td>
@@ -113,7 +132,8 @@ export function ClasificacionTable({ clasificacion }) {
                     <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface-muted)] text-xs sm:text-lg">{row.reservas}</td>
                   </tr>
                 </Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

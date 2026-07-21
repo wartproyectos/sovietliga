@@ -1,6 +1,6 @@
 import { ClasificacionTable } from '../components/ClasificacionTable';
 
-export function ClasificacionPage({ clasificacion, loading, error }) {
+export function ClasificacionPage({ clasificacion, loading, error, jornada }) {
   if (loading) {
     return (
       <div className="sv-panel p-10 text-left text-[var(--sv-on-surface-muted)]">
@@ -22,5 +22,5 @@ export function ClasificacionPage({ clasificacion, loading, error }) {
     );
   }
 
-  return <ClasificacionTable clasificacion={clasificacion} />;
+  return <ClasificacionTable clasificacion={clasificacion} jornada={jornada} />;
 }
