@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useDisponibilidad } from '../hooks/useDisponibilidad';
+import { useTemporada } from '../contexts/TemporadaContext';
 import { PageState } from '../components/PageState';
 import { PLAZAS_CONVOCATORIA } from '../constants';
 import { derivarEstadisticas, generarConvocatoria } from '../lib/convocatoria';
@@ -110,6 +111,7 @@ function TarjetaEquipo({ titulo, emoji, jugadores, cabecera }) {
 }
 
 export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error: clasifError, ultimaJornada }) {
+  const { activa } = useTemporada();
   const {
     respuestas,
     invitados,
@@ -125,7 +127,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   const error = clasifError || dispError;
 
   const { grupos, convocatoria, equipos } = useMemo(() => {
-    if (!clasificacion.length || !respuestas)
+    if (!clasificacion.length || !respuestas || !jornada)
       return { grupos: null, convocatoria: null, equipos: null };
 
     const convocables = [];
@@ -171,6 +173,15 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
     return <PageState loading={loading} error={error} loadingMessage="Cargando convocatoria..." />;
   }
 
+  if (!jornada || !ventana) {
+    return (
+      <div className="sv-panel p-8 mx-4 text-sm text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
+        La temporada activa aún no tiene fecha de arranque. Configúrala en Supabase para poder
+        preparar convocatorias.
+      </div>
+    );
+  }
+
   const now = new Date();
   let estadoVentana;
   let estadoColor;
@@ -195,6 +206,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
 
   const mensaje = equipos
     ? construirMensajeWhatsapp({
+        temporada: activa?.nombre,
         numeroJornada: jornada.numero,
         fecha: jornada.fecha,
         equipoNegro: equipos.equipo1.map((p) => p.nombre),
@@ -297,25 +309,6 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
               </p>
             )}
           </section>
-
-          {/* Norma que decidió el corte */}
-          {convocatoria.corte && (
-            <div className="bg-[var(--sv-surface-dim)] p-5 flex items-start gap-3">
-              <span className="text-lg text-[var(--sv-primary)]">★</span>
-              <div>
-                <h4 className="text-sm font-bold text-[var(--sv-on-surface)] leading-none mb-2 uppercase tracking-[0.08em]">
-                  Norma {convocatoria.corte.norma.id} — {convocatoria.corte.norma.nombre}
-                </h4>
-                <p className="text-xs text-[var(--sv-on-surface)] leading-relaxed">
-                  Decidió el último puesto:{' '}
-                  <b>{convocatoria.corte.dentro.nombre}</b> (
-                  {convocatoria.corte.norma.describe(convocatoria.corte.dentro)}) entra por delante
-                  de <b>{convocatoria.corte.fuera.nombre}</b> (
-                  {convocatoria.corte.norma.describe(convocatoria.corte.fuera)}).
-                </p>
-              </div>
-            </div>
-          )}
 
           <BotonWhatsapp
             mensaje={mensaje}

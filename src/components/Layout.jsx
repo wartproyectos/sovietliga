@@ -1,26 +1,32 @@
 import { Outlet, NavLink } from 'react-router-dom';
+import { useTemporada } from '../contexts/TemporadaContext';
+import { SelectorTemporada } from './SelectorTemporada';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Clasificación', icon: '📊' },
   { to: '/historial', label: 'Historial', icon: '🕑' },
-  { to: '/convocatoria', label: 'Convocatoria', icon: '📋' },
+  // La Convocatoria solo se muestra en la temporada activa: en una pasada no
+  // tiene sentido preparar la próxima jornada.
+  { to: '/convocatoria', label: 'Convocatoria', icon: '📋', soloActiva: true },
   // "Crear Equipo" (/equipos) sigue existiendo como ruta, pero fuera del menú:
   // el reparto real lo hace ya la convocatoria.
 ];
 
 export function Layout({ jornada }) {
+  const { esActivaSeleccionada } = useTemporada();
+  const items = NAV_ITEMS.filter((it) => !it.soloActiva || esActivaSeleccionada);
+
   return (
     <div className="min-h-screen bg-[var(--sv-surface)] flex flex-col">
       {/* Header */}
       <header className="bg-[var(--sv-surface)] text-[var(--sv-on-surface)] border-b-4 border-[var(--sv-on-surface)]">
-        <div className="max-w-3xl mx-auto px-4 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-[33px] font-bold leading-none text-[var(--sv-primary)]">
-              Liga Soviet 2025/2026
-            </h1>
-          </div>
-          <div className="bg-[var(--sv-on-surface)] text-[var(--sv-surface)] px-4 py-2 text-sm font-bold tracking-[0.15em] uppercase">
-            {jornada ? `Jornada ${jornada}` : 'Cargando'}
+        <div className="max-w-3xl mx-auto px-4 py-5 flex items-center justify-between gap-3">
+          <h1 className="text-[28px] sm:text-[33px] font-bold leading-none text-[var(--sv-primary)] flex items-center gap-2 flex-wrap">
+            <span>Liga Soviet</span>
+            <SelectorTemporada />
+          </h1>
+          <div className="bg-[var(--sv-on-surface)] text-[var(--sv-surface)] px-4 py-2 text-sm font-bold tracking-[0.15em] uppercase shrink-0">
+            {jornada ? `Jornada ${jornada}` : '—'}
           </div>
         </div>
       </header>
@@ -34,7 +40,7 @@ export function Layout({ jornada }) {
       {/* Bottom Navigation — el padding extra evita que la barra del iPhone tape los enlaces */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[color:rgb(253_250_235/0.9)] backdrop-blur-[20px] border-t-4 border-[var(--sv-on-surface)] pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-3xl mx-auto flex">
-          {NAV_ITEMS.map(({ to, label, icon }) => (
+          {items.map(({ to, label, icon }) => (
             <NavLink
               key={to}
               to={to}

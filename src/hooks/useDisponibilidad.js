@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { FORM_RESPONSES_SHEET_ID, TEMPORADA_2627_INICIO } from '../constants';
+import { FORM_RESPONSES_SHEET_ID } from '../constants';
+import { useTemporada } from '../contexts/TemporadaContext';
 
 function parseCsv(text) {
   const rows = [];
@@ -33,19 +34,23 @@ function parseTimestamp(str) {
   return new Date(year, month - 1, day, hours, minutes, seconds);
 }
 
-export function getProximaJornada() {
+/**
+ * Fecha del próximo partido y su número dentro de la temporada.
+ * `inicio` es un `Date` con el lunes de la jornada 1.
+ */
+export function getProximaJornada(inicio) {
   const now = new Date();
-  const start = TEMPORADA_2627_INICIO;
 
-  if (now < start) {
-    return { numero: 1, fecha: new Date(start) };
+  if (now < inicio) {
+    return { numero: 1, fecha: new Date(inicio) };
   }
 
   const msPerDay = 24 * 60 * 60 * 1000;
   const msPerWeek = 7 * msPerDay;
-  const weekNumber = Math.floor((now - start) / msPerWeek);
-  const thisMonday = new Date(start.getTime() + weekNumber * msPerWeek);
+  const weekNumber = Math.floor((now - inicio) / msPerWeek);
+  const thisMonday = new Date(inicio.getTime() + weekNumber * msPerWeek);
 
+  // Si ya pasó el martes, la siguiente jornada es la de la semana que viene.
   if (now >= new Date(thisMonday.getTime() + msPerDay)) {
     return { numero: weekNumber + 2, fecha: new Date(thisMonday.getTime() + msPerWeek) };
   }
@@ -65,18 +70,35 @@ export function getVentana(fechaPartido) {
   return { inicio: friday, fin: sunday };
 }
 
+/**
+ * `fecha_inicio` viene como 'YYYY-MM-DD' (columna date de Postgres). El
+ * constructor de Date con guiones lo interpreta como UTC; construir por partes
+ * evita el desfase de hora local.
+ */
+function fechaInicioLocal(iso) {
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
 export function useDisponibilidad() {
+  const { activa } = useTemporada();
   const [respuestas, setRespuestas] = useState(null);
   const [invitados, setInvitados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const { jornada, ventana } = useMemo(() => {
-    const j = getProximaJornada();
+    const inicio = fechaInicioLocal(activa?.fecha_inicio);
+    if (!inicio) return { jornada: null, ventana: null };
+    const j = getProximaJornada(inicio);
     return { jornada: j, ventana: getVentana(j.fecha) };
-  }, []);
+  }, [activa]);
 
   useEffect(() => {
+    if (!ventana) return;
+
     async function fetchData() {
       try {
         const url = `https://docs.google.com/spreadsheets/d/${FORM_RESPONSES_SHEET_ID}/export?format=csv`;
