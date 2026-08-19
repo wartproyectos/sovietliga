@@ -6,6 +6,10 @@ export const PARTICIPACION_RANGE = 'A1:BZ31';
 // A partir de esta jornada, el líder de la clasificación se destaca como campeón.
 export const CHAMPION_JORNADA = 42;
 
+// Mínimo de partidos jugados para entrar en la clasificación oficial.
+// Quien no llegue aparece igualmente, pero agrupado al final de la tabla.
+export const MIN_PARTIDOS_CLASIFICACION = 10;
+
 export const EXCLUDED_PLAYERS = new Set([
   'Edu',
   'Patrikov',

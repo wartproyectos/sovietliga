@@ -1,62 +1,12 @@
 import { useState, useMemo } from 'react';
+import { getPrincipalPos, getSecondaryPos, posLabel } from '../data/posiciones';
+import { PageState } from '../components/PageState';
 
-export function EquiposPage({ clasificacion }) {
+export function EquiposPage({ clasificacion, loading, error }) {
   const [selectedNames, setSelectedNames] = useState(new Set());
   const [generado, setGenerado] = useState(null);
   const [draggedPlayer, setDraggedPlayer] = useState(null); // { nombre, fromTeam }
   const [dragOverTeam, setDragOverTeam] = useState(null); // 'equipo1' | 'equipo2' | null
-
-  const POS_LABELS = {
-    1: 'Base',
-    2: 'Escolta',
-    3: 'Alero',
-    4: 'Ala-Pívot',
-    5: 'Pívot',
-  };
-
-  // Mapa de posiciones por jugador (principal y secundaria) para que el generador respete 1-1 lo más posible.
-  // Si un jugador no aparece aquí, se tratará como "flexible" (penalización alta en su encaje por posición).
-  const PLAYER_POSITIONS = {
-    Adrianskj: { principal: 4, secundaria: 3 },
-    Alvarezko: { principal: 3, secundaria: 4 },
-    Danilov: { principal: 2, secundaria: 1 },
-    Davidov: { principal: 5, secundaria: 4 },
-    Evgeni: { principal: 5, secundaria: 4 },
-    Machin: { principal: 2, secundaria: 1 },
-    Gazalov: { principal: 3, secundaria: 2 },
-    Germanov: { principal: 5, secundaria: 4 },
-    Isaac: { principal: 3, secundaria: 2 },
-    Kostis: { principal: 4, secundaria: 5 },
-    Ladrinskj: { principal: 1, secundaria: 2 },
-    Mijailichenko: { principal: 3, secundaria: 4 },
-    Oriolev: { principal: 4, secundaria: 5 },
-    Ricky: { principal: 4, secundaria: 5 },
-    Santiagovitx: { principal: 4, secundaria: 3 },
-    Stefanov: { principal: 4, secundaria: 3 },
-    Teleskov: { principal: 2, secundaria: 1 },
-    Vinyalovic: { principal: 2, secundaria: 1 },
-    Xavi: { principal: 2, secundaria: 3 },
-    Yuri: { principal: 1, secundaria: 2 },
-  };
-
-  const normalizePlayerName = (s) => (typeof s === 'string' ? s.trim().toLowerCase() : '');
-  const PLAYER_POSITIONS_NORMALIZED = Object.fromEntries(
-    Object.entries(PLAYER_POSITIONS).map(([name, data]) => [normalizePlayerName(name), data])
-  );
-
-  function getPrincipalPos(playerName) {
-    const key = normalizePlayerName(playerName);
-    return PLAYER_POSITIONS_NORMALIZED[key]?.principal ?? null;
-  }
-
-  function getSecondaryPos(playerName) {
-    const key = normalizePlayerName(playerName);
-    return PLAYER_POSITIONS_NORMALIZED[key]?.secundaria ?? null;
-  }
-
-  function posLabelFromNumber(pos) {
-    return pos ? POS_LABELS[pos] : null;
-  }
 
   // Jugadores disponibles agrupados por posición principal y ordenados alfabéticamente.
   const jugadoresPorPosicion = useMemo(() => {
@@ -173,7 +123,6 @@ export function EquiposPage({ clasificacion }) {
         });
 
         const used = new Array(starters.length).fill(false);
-        const assignmentBySlotIdx = new Array(slotsSorted.length).fill(null);
         let positionCostSum = 0;
         let team1PositionCost = 0;
         let team2PositionCost = 0;
@@ -181,7 +130,7 @@ export function EquiposPage({ clasificacion }) {
         const team1StartersByPos = {};
         const team2StartersByPos = {};
 
-        function updateBestIfBetter(leafAssignment) {
+        function updateBestIfBetter() {
           const sum1 =
             change1.porcentaje + Object.values(team1StartersByPos).reduce((s, p) => s + p.porcentaje, 0);
           const sum2 =
@@ -233,7 +182,7 @@ export function EquiposPage({ clasificacion }) {
 
         function backtrack(slotIdx) {
           if (slotIdx === slotsSorted.length) {
-            updateBestIfBetter(assignmentBySlotIdx);
+            updateBestIfBetter();
             return;
           }
 
@@ -253,7 +202,6 @@ export function EquiposPage({ clasificacion }) {
             if (best && nextCostSum > best.positionCost) continue; // poda lexicográfica por posición
 
             used[pIdx] = true;
-            assignmentBySlotIdx[slotIdx] = starters[pIdx];
 
             const player = starters[pIdx];
             if (slot.team === 1) {
@@ -277,7 +225,6 @@ export function EquiposPage({ clasificacion }) {
             }
 
             used[pIdx] = false;
-            assignmentBySlotIdx[slotIdx] = null;
           }
         }
 
@@ -293,11 +240,14 @@ export function EquiposPage({ clasificacion }) {
     setGenerado({ equipo1, equipo2 });
   };
 
+  if (loading || error) {
+    return <PageState loading={loading} error={error} loadingMessage="Cargando jugadores..." />;
+  }
+
   if (!clasificacion || clasificacion.length === 0) {
     return (
-      <div className="sv-panel p-8 text-left text-[var(--sv-on-surface-muted)]">
-        <div className="text-3xl mb-3">◉</div>
-        Cargando jugadores...
+      <div className="sv-panel p-8 mx-3 sm:mx-4 text-left text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
+        No hay jugadores disponibles.
       </div>
     );
   }
@@ -322,13 +272,13 @@ export function EquiposPage({ clasificacion }) {
               return (
                 <section key={pos} className="flex flex-col gap-2">
                   <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--sv-on-surface-muted)]">
-                    {posLabelFromNumber(pos)} ({pos})
+                    {posLabel(pos)} ({pos})
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                     {players.map((player) => {
                       const selected = selectedNames.has(player.nombre);
                       const mainPos = getPrincipalPos(player.nombre);
-                      const mainLabel = posLabelFromNumber(mainPos);
+                      const mainLabel = posLabel(mainPos);
                       return (
                         <button
                           key={player.nombre}
@@ -439,7 +389,7 @@ export function EquiposPage({ clasificacion }) {
                   >
                     <span className="text-stone-800 font-medium text-sm sm:text-base">
                       {p.nombre}
-                      {p.posPrincipal ? ` · ${posLabelFromNumber(p.posPrincipal)} (${p.posPrincipal})` : ''}
+                      {p.posPrincipal ? ` · ${posLabel(p.posPrincipal)} (${p.posPrincipal})` : ''}
                     </span>
                     <span className="text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-tighter">PJ: {p.pj} · {Math.round(Number(p.porcentaje ?? 0))}% V</span>
                   </div>
@@ -482,7 +432,7 @@ export function EquiposPage({ clasificacion }) {
                   >
                     <span className="text-stone-800 font-medium text-sm sm:text-base">
                       {p.nombre}
-                      {p.posPrincipal ? ` · ${posLabelFromNumber(p.posPrincipal)} (${p.posPrincipal})` : ''}
+                      {p.posPrincipal ? ` · ${posLabel(p.posPrincipal)} (${p.posPrincipal})` : ''}
                     </span>
                     <span className="text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-tighter">PJ: {p.pj} · {Math.round(Number(p.porcentaje ?? 0))}% V</span>
                   </div>

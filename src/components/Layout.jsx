@@ -25,12 +25,12 @@ export function Layout({ jornada }) {
       <div className="sv-agit-strip" />
 
       {/* Contenido principal — padding-bottom para no tapar con la bottom nav */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-0 py-8 pb-24">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-0 py-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[color:rgb(253_250_235/0.9)] backdrop-blur-[20px] border-t-4 border-[var(--sv-on-surface)]">
+      {/* Bottom Navigation — el padding extra evita que la barra del iPhone tape los enlaces */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[color:rgb(253_250_235/0.9)] backdrop-blur-[20px] border-t-4 border-[var(--sv-on-surface)] pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-3xl mx-auto flex">
           {NAV_ITEMS.map(({ to, label, icon }) => (
             <NavLink

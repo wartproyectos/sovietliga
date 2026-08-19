@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { PageState } from '../components/PageState';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,7 +75,7 @@ function PlayerBadge({ nombre, variant }) {
   );
 }
 
-function TeamSection({ label, icon, players, variant, emptyMsg }) {
+function TeamSection({ label, icon, players, variant }) {
   if (!players || players.length === 0) return null;
   return (
     <div>
@@ -102,7 +103,10 @@ function JornadaCard({ jornada }) {
     resultLabel = 'Empate';
     resultColor = 'text-amber-600';
   } else if (ganadores.length > 0 && perdedores.length > 0) {
-    resultLabel = `${ganadores[0]} y ${ganadores.length - 1 > 0 ? `+${ganadores.length - 1}` : ''} ganaron`;
+    resultLabel =
+      ganadores.length === 1
+        ? `Ganó ${ganadores[0]}`
+        : `Ganaron ${ganadores[0]} y ${ganadores.length - 1} más`;
     resultColor = 'text-emerald-700';
   } else {
     resultLabel = 'Sin resultado';
@@ -182,20 +186,15 @@ function JornadaCard({ jornada }) {
 // Page
 // ---------------------------------------------------------------------------
 
-export function HistorialPage({ clasificacion }) {
+export function HistorialPage({ clasificacion, loading, error }) {
   const historial = useMemo(() => buildHistorial(clasificacion), [clasificacion]);
 
   // Número de la última jornada jugada (historial está ordenado de más reciente
   // a más antigua, así que el primer elemento tiene el número más alto).
   const totalJornadas = historial.length > 0 ? historial[0].numero : 0;
 
-  if (!clasificacion || clasificacion.length === 0) {
-    return (
-      <div className="sv-panel p-8 text-left">
-        <div className="text-4xl mb-4">◪</div>
-        <p className="text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">Cargando historial...</p>
-      </div>
-    );
+  if (loading || error) {
+    return <PageState loading={loading} error={error} loadingMessage="Cargando historial..." />;
   }
 
   return (

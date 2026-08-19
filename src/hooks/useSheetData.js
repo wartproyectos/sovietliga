@@ -76,23 +76,6 @@ function normalizePlayerName(value) {
   return value.trim().toLowerCase();
 }
 
-function detectJornadaFromTable(table) {
-  if (!table || !table.rows) return null;
-  let maxCol = -1;
-  for (const row of table.rows) {
-    if (!row.c) continue;
-    for (let i = row.c.length - 1; i >= 5; i--) {
-      const v = row.c[i]?.v;
-      if (v !== null && v !== undefined && v !== '') {
-        if (i > maxCol) maxCol = i;
-        break;
-      }
-    }
-  }
-  // Las columnas de jornada empiezan en F (índice 5) → jornada 1
-  return maxCol >= 5 ? maxCol - 4 : null;
-}
-
 function detectLatestJornadaFromClasificacion(clasificacion) {
   if (!clasificacion || clasificacion.length === 0) return null;
 

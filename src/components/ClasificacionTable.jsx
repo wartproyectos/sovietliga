@@ -1,6 +1,6 @@
 import { Fragment, useState, useMemo } from 'react';
 import { PlayerModal } from './PlayerModal';
-import { CHAMPION_JORNADA } from '../constants';
+import { CHAMPION_JORNADA, MIN_PARTIDOS_CLASIFICACION } from '../constants';
 
 const SORT_ARROW = { asc: ' ▲', desc: ' ▼' };
 
@@ -46,16 +46,20 @@ export function ClasificacionTable({ clasificacion, jornada }) {
       return dir === 'asc' ? Number(va ?? 0) - Number(vb ?? 0) : Number(vb ?? 0) - Number(va ?? 0);
     };
 
-    // Regla de clasificación: jugadores con menos de 10 PJ siempre al final.
-    const withMinGames = copy.filter((p) => Number(p.pj ?? 0) >= 10).sort(compareByCurrentSort);
-    const underMinGames = copy.filter((p) => Number(p.pj ?? 0) < 10).sort(compareByCurrentSort);
+    // Regla de clasificación: jugadores por debajo del mínimo de PJ siempre al final.
+    const withMinGames = copy
+      .filter((p) => Number(p.pj ?? 0) >= MIN_PARTIDOS_CLASIFICACION)
+      .sort(compareByCurrentSort);
+    const underMinGames = copy
+      .filter((p) => Number(p.pj ?? 0) < MIN_PARTIDOS_CLASIFICACION)
+      .sort(compareByCurrentSort);
     const ordered = withMinGames.concat(underMinGames);
 
     return ordered.map((r, i) => ({ ...r, pos: i + 1 }));
   }, [clasificacion, sort]);
 
   const cutoffIdx = useMemo(
-    () => sorted.findIndex((p) => Number(p.pj ?? 0) < 10),
+    () => sorted.findIndex((p) => Number(p.pj ?? 0) < MIN_PARTIDOS_CLASIFICACION),
     [sorted]
   );
 
@@ -64,7 +68,7 @@ export function ClasificacionTable({ clasificacion, jornada }) {
   // independientemente del orden que el usuario aplique a la tabla.
   const championNombre = useMemo(() => {
     if (!jornada || jornada < CHAMPION_JORNADA) return null;
-    const eligible = clasificacion.filter((p) => Number(p.pj ?? 0) >= 10);
+    const eligible = clasificacion.filter((p) => Number(p.pj ?? 0) >= MIN_PARTIDOS_CLASIFICACION);
     if (eligible.length === 0) return null;
     const leader = [...eligible].sort(
       (a, b) => Number(b.porcentaje ?? 0) - Number(a.porcentaje ?? 0)
@@ -108,7 +112,7 @@ export function ClasificacionTable({ clasificacion, jornada }) {
                   {cutoffIdx > 0 && idx === cutoffIdx && (
                     <tr className="bg-[var(--sv-surface)]">
                       <td colSpan={6} className="px-3 sm:px-6 py-2 sm:py-3 text-[11px] sm:text-base text-[var(--sv-primary)] font-bold uppercase tracking-[0.03em] border-b-4 border-[var(--sv-primary)]">
-                        Jugadores con menos de 10 Partidos Jugados
+                        Jugadores con menos de {MIN_PARTIDOS_CLASIFICACION} Partidos Jugados
                       </td>
                     </tr>
                   )}

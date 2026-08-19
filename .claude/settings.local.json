@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C /c/Repos/liga-soviet status)"
+      "Bash(git -C /c/Repos/liga-soviet status)",
+      "Bash(npm ls *)"
     ]
   }
 }

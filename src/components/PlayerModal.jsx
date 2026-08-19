@@ -1,40 +1,5 @@
 import { useEffect } from 'react';
-
-const POS_LABELS = {
-  1: 'Base',
-  2: 'Escolta',
-  3: 'Alero',
-  4: 'Ala-Pívot',
-  5: 'Pívot',
-};
-
-const PLAYER_POSITIONS = {
-  Adrianskj: { principal: 4, secundaria: 3 },
-  Alvarezko: { principal: 3, secundaria: 4 },
-  Danilov: { principal: 2, secundaria: 1 },
-  Davidov: { principal: 5, secundaria: 4 },
-  Evgeni: { principal: 5, secundaria: 4 },
-  Machin: { principal: 2, secundaria: 1 },
-  Gazalov: { principal: 3, secundaria: 2 },
-  Germanov: { principal: 5, secundaria: 4 },
-  Isaac: { principal: 3, secundaria: 2 },
-  Kostis: { principal: 4, secundaria: 5 },
-  Ladrinskj: { principal: 1, secundaria: 2 },
-  Mijailichenko: { principal: 3, secundaria: 4 },
-  Oriolev: { principal: 4, secundaria: 5 },
-  Ricky: { principal: 4, secundaria: 5 },
-  Santiagovitx: { principal: 4, secundaria: 3 },
-  Stefanov: { principal: 4, secundaria: 3 },
-  Teleskov: { principal: 2, secundaria: 1 },
-  Vinyalovic: { principal: 2, secundaria: 1 },
-  Xavi: { principal: 2, secundaria: 3 },
-  Yuri: { principal: 1, secundaria: 2 },
-};
-
-const normalizePlayerName = (s) => (typeof s === 'string' ? s.trim().toLowerCase() : '');
-const PLAYER_POSITIONS_NORMALIZED = Object.fromEntries(
-  Object.entries(PLAYER_POSITIONS).map(([name, data]) => [normalizePlayerName(name), data])
-);
+import { describePosiciones } from '../data/posiciones';
 
 export function PlayerModal({ player, onClose }) {
   useEffect(() => {
@@ -51,10 +16,7 @@ export function PlayerModal({ player, onClose }) {
 
   if (!player) return null;
 
-  const playerPos = PLAYER_POSITIONS_NORMALIZED[normalizePlayerName(player.nombre)] ?? null;
-  const positionText = playerPos
-    ? `${POS_LABELS[playerPos.principal]} (${playerPos.principal}) · ${POS_LABELS[playerPos.secundaria]} (${playerPos.secundaria})`
-    : 'Sin definir';
+  const positionText = describePosiciones(player.nombre) ?? 'Sin definir';
 
   return (
     <div

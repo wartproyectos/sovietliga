@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Foglamp scan (contains a secret edit token)
+.foglamp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
