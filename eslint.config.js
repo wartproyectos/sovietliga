@@ -23,7 +23,13 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Ignora variables/args cuyo nombre empieza por mayúscula o `_`. La
+      // mayúscula cubre los componentes de React destructurados (`{ Icon }`)
+      // que se usan en JSX pero el linter no reconoce como uso.
+      'no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' },
+      ],
     },
   },
 ])

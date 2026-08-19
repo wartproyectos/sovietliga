@@ -1,4 +1,5 @@
 import { ClasificacionTable } from '../components/ClasificacionTable';
+import { AvisoFormulario } from '../components/AvisoFormulario';
 import { PageState } from '../components/PageState';
 
 export function ClasificacionPage({ clasificacion, loading, error, jornada }) {
@@ -6,5 +7,11 @@ export function ClasificacionPage({ clasificacion, loading, error, jornada }) {
     return <PageState loading={loading} error={error} loadingMessage="Cargando clasificación..." />;
   }
 
-  return <ClasificacionTable clasificacion={clasificacion} jornada={jornada} />;
+  return (
+    <>
+      {/* TODO: quitar `mostrarSiempre` cuando el aviso deje de estar en pruebas. */}
+      <AvisoFormulario mostrarSiempre />
+      <ClasificacionTable clasificacion={clasificacion} jornada={jornada} />
+    </>
+  );
 }

@@ -8,5 +8,9 @@ export const MIN_PARTIDOS_CLASIFICACION = 10;
 // Sheet donde el formulario de Google guarda las respuestas de disponibilidad.
 export const FORM_RESPONSES_SHEET_ID = '11lTnNNPxYZqmHb1KCO9EDPG5RDXi7hfJgZxBwniSj_0';
 
+// Formulario que rellenan los jugadores. El aviso de "apúntate" enlaza aquí.
+export const FORMULARIO_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLSfvuvK8-3VpGMj7ZqUrUBfynLQeL_pGRKkR46BTspx8E9xEAg/viewform?usp=header';
+
 // Jugadores que saltan a la pista cada jornada (6 por equipo).
 export const PLAZAS_CONVOCATORIA = 12;
