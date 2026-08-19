@@ -23,7 +23,7 @@ function App() {
           />
           <Route
             path="convocatoria"
-            element={<ConvocatoriaPage clasificacion={clasificacion} loading={loading} error={error} />}
+            element={<ConvocatoriaPage clasificacion={clasificacion} loading={loading} error={error} ultimaJornada={jornada} />}
           />
           <Route
             path="equipos"

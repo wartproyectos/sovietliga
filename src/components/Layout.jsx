@@ -4,7 +4,8 @@ const NAV_ITEMS = [
   { to: '/', label: 'Clasificación', icon: '📊' },
   { to: '/historial', label: 'Historial', icon: '🕑' },
   { to: '/convocatoria', label: 'Convocatoria', icon: '📋' },
-  { to: '/equipos', label: 'Crear Equipo', icon: '⚡' },
+  // "Crear Equipo" (/equipos) sigue existiendo como ruta, pero fuera del menú:
+  // el reparto real lo hace ya la convocatoria.
 ];
 
 export function Layout({ jornada }) {

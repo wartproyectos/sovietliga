@@ -12,7 +12,15 @@ export const MIN_PARTIDOS_CLASIFICACION = 10;
 
 export const FORM_RESPONSES_SHEET_ID = '11lTnNNPxYZqmHb1KCO9EDPG5RDXi7hfJgZxBwniSj_0';
 
+// Jugadores que saltan a la pista cada jornada (6 por equipo).
+export const PLAZAS_CONVOCATORIA = 12;
+
 export const TEMPORADA_2627_INICIO = new Date(2026, 8, 7);
+
+// "26/27". Sale del año de arranque, no de la fecha del partido: una jornada de
+// febrero pertenece a la temporada que empezó en septiembre del año anterior.
+export const TEMPORADA_ETIQUETA =
+  `${TEMPORADA_2627_INICIO.getFullYear() % 100}/${(TEMPORADA_2627_INICIO.getFullYear() + 1) % 100}`;
 
 export const EXCLUDED_PLAYERS = new Set([
   'Edu',
