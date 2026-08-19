@@ -1,9 +1,10 @@
 import { Outlet, NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Clasificacion', icon: '📊' },
+  { to: '/', label: 'Clasificación', icon: '📊' },
   { to: '/historial', label: 'Historial', icon: '🕑' },
-  { to: '/equipos', label: 'Equipos', icon: '⚡' },
+  { to: '/convocatoria', label: 'Convocatoria', icon: '📋' },
+  { to: '/equipos', label: 'Crear Equipo', icon: '⚡' },
 ];
 
 export function Layout({ jornada }) {

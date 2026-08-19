@@ -3,6 +3,7 @@ import { useSupabaseData } from './hooks/useSupabaseData';
 import { Layout } from './components/Layout';
 import { ClasificacionPage } from './pages/ClasificacionPage';
 import { HistorialPage } from './pages/HistorialPage';
+import { ConvocatoriaPage } from './pages/ConvocatoriaPage';
 import { EquiposPage } from './pages/EquiposPage';
 
 function App() {
@@ -19,6 +20,10 @@ function App() {
           <Route
             path="historial"
             element={<HistorialPage clasificacion={clasificacion} loading={loading} error={error} />}
+          />
+          <Route
+            path="convocatoria"
+            element={<ConvocatoriaPage clasificacion={clasificacion} loading={loading} error={error} />}
           />
           <Route
             path="equipos"

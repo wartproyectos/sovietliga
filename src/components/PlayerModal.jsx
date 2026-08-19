@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { describePosiciones } from '../data/posiciones';
+import { posLabel } from '../data/posiciones';
 
 export function PlayerModal({ player, onClose }) {
   useEffect(() => {
@@ -16,7 +16,11 @@ export function PlayerModal({ player, onClose }) {
 
   if (!player) return null;
 
-  const positionText = describePosiciones(player.nombre) ?? 'Sin definir';
+  const p = player.pos_principal;
+  const s = player.pos_secundaria;
+  const positionText = p
+    ? `${posLabel(p)} (${p})${s ? ` · ${posLabel(s)} (${s})` : ''}`
+    : 'Sin definir';
 
   return (
     <div

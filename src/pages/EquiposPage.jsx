@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { getPrincipalPos, getSecondaryPos, posLabel } from '../data/posiciones';
+import { posLabel } from '../data/posiciones';
 import { PageState } from '../components/PageState';
 
 export function EquiposPage({ clasificacion, loading, error }) {
@@ -14,7 +14,7 @@ export function EquiposPage({ clasificacion, loading, error }) {
     const sorted = [...clasificacion].sort((a, b) => a.nombre.localeCompare(b.nombre));
 
     for (const player of sorted) {
-      const pos = getPrincipalPos(player.nombre);
+      const pos = player.pos_principal;
       if ([1, 2, 3, 4, 5].includes(pos)) grupos[pos].push(player);
       else grupos.otros.push(player);
     }
@@ -85,8 +85,8 @@ export function EquiposPage({ clasificacion, loading, error }) {
       .filter((p) => selectedNames.has(p.nombre))
       .map((p) => ({
         ...p,
-        posPrincipal: getPrincipalPos(p.nombre),
-        posSecundaria: getSecondaryPos(p.nombre),
+        posPrincipal: p.pos_principal,
+        posSecundaria: p.pos_secundaria,
       }));
 
     const slots = [];
@@ -257,7 +257,7 @@ export function EquiposPage({ clasificacion, loading, error }) {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[var(--sv-on-surface)] leading-none">Generador de Equipos</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-[var(--sv-on-surface)] leading-none">Crea tu propio Equipo</h2>
           <p className="text-xs sm:text-sm text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] mt-2">Selecciona 12 jugadores para equilibrar (seleccionados: {selectedNames.size}/12)</p>
         </div>
       </div>
@@ -277,7 +277,7 @@ export function EquiposPage({ clasificacion, loading, error }) {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                     {players.map((player) => {
                       const selected = selectedNames.has(player.nombre);
-                      const mainPos = getPrincipalPos(player.nombre);
+                      const mainPos = player.pos_principal;
                       const mainLabel = posLabel(mainPos);
                       return (
                         <button

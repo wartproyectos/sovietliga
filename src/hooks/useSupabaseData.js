@@ -74,6 +74,8 @@ export function useSupabaseData() {
             v: Number(c.v),
             porcentaje: Number(c.porcentaje),
             reservas: c.reservas,
+            pos_principal: c.pos_principal,
+            pos_secundaria: c.pos_secundaria,
             jornadaParticipacion: partMap.get(c.jugador_id) ?? [],
             jornadaVictorias: vicMap.get(c.jugador_id) ?? [],
           }))

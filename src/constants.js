@@ -10,6 +10,10 @@ export const CHAMPION_JORNADA = 42;
 // Quien no llegue aparece igualmente, pero agrupado al final de la tabla.
 export const MIN_PARTIDOS_CLASIFICACION = 10;
 
+export const FORM_RESPONSES_SHEET_ID = '11lTnNNPxYZqmHb1KCO9EDPG5RDXi7hfJgZxBwniSj_0';
+
+export const TEMPORADA_2627_INICIO = new Date(2026, 8, 7);
+
 export const EXCLUDED_PLAYERS = new Set([
   'Edu',
   'Patrikov',
