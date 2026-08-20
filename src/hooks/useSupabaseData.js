@@ -5,9 +5,11 @@ import { useTemporada } from '../contexts/TemporadaContext';
 export function useSupabaseData() {
   const { seleccionada, loading: tempLoading, error: tempError } = useTemporada();
   const [clasificacion, setClasificacion] = useState([]);
+  const [marcadores, setMarcadores] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [jornada, setJornada] = useState(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const tid = seleccionada?.id ?? null;
 
@@ -27,7 +29,7 @@ export function useSupabaseData() {
         // Los jugadores habituales vienen de la tabla base (no de la vista),
         // así aparecen aunque todavía no hayan jugado ningún partido. Es lo que
         // permite ver la lista completa al arrancar una temporada nueva.
-        const [clasifRes, jjRes, resRes, habRes] = await Promise.all([
+        const [clasifRes, jjRes, resRes, habRes, partRes] = await Promise.all([
           supabase.from('v_clasificacion').select('*').eq('temporada_id', tid),
           supabase.from('v_jugador_jornada').select('jugador_id, jornada_numero, victoria').eq('temporada_id', tid),
           supabase.from('v_reservas').select('jugador_id, jornada_numero').eq('temporada_id', tid),
@@ -36,12 +38,26 @@ export function useSupabaseData() {
             .select('id, nombre, pos_principal, pos_secundaria')
             .eq('tipo', 'habitual')
             .eq('activo', true),
+          // Marcadores por jornada: fila por partido con puntos y jornada asociada.
+          supabase
+            .from('partidos')
+            .select('id, puntos_a, puntos_b, jornadas!inner(id, numero, temporada_id)')
+            .eq('jornadas.temporada_id', tid),
         ]);
 
         if (clasifRes.error) throw clasifRes.error;
         if (jjRes.error) throw jjRes.error;
         if (resRes.error) throw resRes.error;
         if (habRes.error) throw habRes.error;
+        if (partRes.error) throw partRes.error;
+
+        const marcadoresMap = new Map();
+        for (const p of partRes.data) {
+          if (p.puntos_a != null && p.puntos_b != null) {
+            marcadoresMap.set(p.jornadas.numero, { puntos_a: p.puntos_a, puntos_b: p.puntos_b });
+          }
+        }
+        setMarcadores(marcadoresMap);
 
         const statsPorId = new Map(clasifRes.data.map((c) => [c.jugador_id, c]));
         const jugJorn = jjRes.data;
@@ -78,6 +94,7 @@ export function useSupabaseData() {
           .map((h) => {
             const s = statsPorId.get(h.id);
             return {
+              id: h.id,
               nombre: h.nombre,
               pj: s?.pj ?? 0,
               v: Number(s?.v ?? 0),
@@ -103,7 +120,9 @@ export function useSupabaseData() {
     }
 
     fetchData();
-  }, [tid, tempLoading, tempError]);
+  }, [tid, tempLoading, tempError, refreshTick]);
 
-  return { clasificacion, loading, error, jornada };
+  const refrescar = () => setRefreshTick((t) => t + 1);
+
+  return { clasificacion, marcadores, loading, error, jornada, refrescar };
 }

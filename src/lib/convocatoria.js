@@ -98,6 +98,28 @@ function azar(nombre, semilla) {
   return (h >>> 0) / 4294967296;
 }
 
+/**
+ * Elige el alineador entre los titulares. Determinista por (semilla, nombre):
+ * la misma jornada siempre designa a la misma persona, así no cambia al
+ * refrescar la pantalla. Usa el mismo hash que la norma 5 para reutilizar
+ * el avalanche final y evitar sesgos por prefijos comunes.
+ *
+ * Devuelve el jugador entero, o null si la lista viene vacía.
+ */
+export function designarAlineador(titulares, semilla) {
+  if (!titulares || titulares.length === 0) return null;
+  let elegido = titulares[0];
+  let mejor = azar(elegido.nombre, semilla);
+  for (let i = 1; i < titulares.length; i++) {
+    const v = azar(titulares[i].nombre, semilla);
+    if (v < mejor) {
+      mejor = v;
+      elegido = titulares[i];
+    }
+  }
+  return elegido;
+}
+
 /** Ordena de más a menos prioridad para jugar. */
 export function ordenarPorPrioridad(jugadores, semilla) {
   return [...jugadores].sort((a, b) => {
@@ -138,6 +160,7 @@ export function derivarEstadisticas(player, ultimaJornada) {
   }
 
   return {
+    id: player.id ?? null,
     nombre: player.nombre,
     reservas: player.reservas ?? 0,
     pj: player.pj ?? 0,

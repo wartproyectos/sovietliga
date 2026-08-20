@@ -26,19 +26,24 @@ export function construirMensajeWhatsapp({
   temporada,
   numeroJornada,
   fecha,
+  alineador = null,
   equipoNegro = [],
   equipoRojo = [],
   reservas = [],
 }) {
   const bloque = (titulo, nombres) => [titulo, ...(nombres.length ? nombres : ['—'])].join('\n');
 
-  return [
+  const partes = [
     `Convo Soviet ${abreviarTemporada(temporada)}: Jornada ${numeroJornada} - ${formatFecha(fecha)}`,
+  ];
+  if (alineador) partes.push('', `📋 Alineador: ${alineador}`);
+  partes.push(
     '',
     bloque('🕷Equipo Negro', equipoNegro),
     '',
     bloque('🌹Equipo Rojo', equipoRojo),
     '',
     bloque('🪑Reservas', reservas),
-  ].join('\n');
+  );
+  return partes.join('\n');
 }

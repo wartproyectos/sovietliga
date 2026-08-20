@@ -1,14 +1,24 @@
 import { useMemo, useState } from 'react';
 import { useDisponibilidad } from '../hooks/useDisponibilidad';
 import { useTemporada } from '../contexts/TemporadaContext';
+import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { PageState } from '../components/PageState';
 import { IconoEstrella } from '../components/IconoEstrella';
+import { EditorJornadaModal } from '../components/EditorJornadaModal';
 import { PLAZAS_CONVOCATORIA } from '../constants';
-import { derivarEstadisticas, generarConvocatoria } from '../lib/convocatoria';
+import { derivarEstadisticas, designarAlineador, generarConvocatoria } from '../lib/convocatoria';
 import { balancearEquipos } from '../lib/equipos';
 import { construirMensajeWhatsapp } from '../lib/mensajeWhatsapp';
 import { BotonWhatsapp } from '../components/BotonWhatsapp';
 import { posLabel } from '../data/posiciones';
+
+/** Fecha local a YYYY-MM-DD, evitando el desfase que introduce toISOString(). */
+function toIsoDay(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 const formatFecha = (d) =>
   d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -156,8 +166,9 @@ function TarjetaEquipo({ titulo, emoji, jugadores, cabecera }) {
 
 // ------ Página ------------------------------------------------------------
 
-export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error: clasifError, ultimaJornada }) {
+export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error: clasifError, ultimaJornada, onCambio }) {
   const { activa } = useTemporada();
+  const { autenticado } = useAdminAuth();
   const {
     respuestas,
     invitados,
@@ -168,13 +179,14 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   } = useDisponibilidad();
 
   const [verDetalle, setVerDetalle] = useState(false);
+  const [editorAbierto, setEditorAbierto] = useState(false);
 
   const loading = clasifLoading || dispLoading;
   const error = clasifError || dispError;
 
-  const { grupos, convocatoria, equipos } = useMemo(() => {
+  const { grupos, convocatoria, equipos, alineador } = useMemo(() => {
     if (!clasificacion.length || !respuestas || !jornada)
-      return { grupos: null, convocatoria: null, equipos: null };
+      return { grupos: null, convocatoria: null, equipos: null, alineador: null };
 
     const convocables = [];
     const voluntariosReserva = [];
@@ -212,8 +224,26 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
       convocatoria,
       // Devuelve null si no hay 12 exactos: sin plantilla completa no hay reparto.
       equipos: balancearEquipos(convocatoria.titulares),
+      // Determinista por número de jornada — no cambia al refrescar.
+      alineador: designarAlineador(convocatoria.titulares, jornada.numero),
     };
   }, [clasificacion, respuestas, invitados, jornada, ultimaJornada]);
+
+  // Precarga para el editor de registro: reparte los 12 titulares por equipo
+  // según el balanceador y marca los reservas como tal. Sólo se usa si la
+  // jornada aún no tiene datos guardados; una vez registrada, el editor lee
+  // el estado real desde BD y esto se ignora.
+  const precargaEditor = useMemo(() => {
+    if (!equipos || !convocatoria) return null;
+    return {
+      titulares: [
+        ...equipos.equipo1.map((p) => ({ jugador_id: p.id, equipo: 'a' })),
+        ...equipos.equipo2.map((p) => ({ jugador_id: p.id, equipo: 'b' })),
+      ],
+      reservas: convocatoria.reservas.map((p) => p.id).filter((id) => id != null),
+      alineadorId: alineador?.id ?? null,
+    };
+  }, [equipos, convocatoria, alineador]);
 
   if (loading || error) {
     return <PageState loading={loading} error={error} loadingMessage="Cargando convocatoria..." />;
@@ -255,6 +285,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
         temporada: activa?.nombre,
         numeroJornada: jornada.numero,
         fecha: jornada.fecha,
+        alineador: alineador?.nombre ?? null,
         equipoNegro: equipos.equipo1.map((p) => p.nombre),
         equipoRojo: equipos.equipo2.map((p) => p.nombre),
         reservas: convocatoria.reservas.map((p) => p.nombre),
@@ -300,6 +331,21 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
         </div>
       ) : (
         <>
+          {/* Alineador designado — determinista por número de jornada. */}
+          {alineador && (
+            <div className="border-2 border-[var(--sv-on-surface)]">
+              <div className="bg-[var(--sv-on-surface)] px-4 py-2 flex items-center gap-2">
+                <IconoEstrella className="w-4 h-4 text-[var(--sv-primary)] shrink-0" />
+                <span className="font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--sv-surface)]">
+                  Alineador de la jornada
+                </span>
+              </div>
+              <p className="px-4 py-3 bg-white font-bold uppercase text-[15px] text-[var(--sv-on-surface)] tracking-[0.02em]">
+                {alineador.nombre}
+              </p>
+            </div>
+          )}
+
           {/* Equipos — con 12 exactos; si no, lista plana. */}
           {equipos ? (
             <>
@@ -368,6 +414,16 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
             deshabilitado={!equipos}
             motivo={`Hacen falta ${PLAZAS_CONVOCATORIA} convocados para repartir los equipos (hay ${convocatoria.titulares.length})`}
           />
+
+          {autenticado && (
+            <button
+              type="button"
+              onClick={() => setEditorAbierto(true)}
+              className="sv-cta w-full py-4 text-[14px]"
+            >
+              Registrar resultado del partido
+            </button>
+          )}
         </>
       )}
 
@@ -434,6 +490,17 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
           </div>
         )}
       </section>
+
+      {editorAbierto && activa && jornada && (
+        <EditorJornadaModal
+          jornadaNumero={jornada.numero}
+          temporadaId={activa.id}
+          jornadaFechaIso={toIsoDay(jornada.fecha)}
+          precarga={precargaEditor}
+          onCerrar={() => setEditorAbierto(false)}
+          onGuardado={() => { setEditorAbierto(false); onCambio?.(); }}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { PageState } from '../components/PageState';
 import { IconoEstrella } from '../components/IconoEstrella';
+import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { useTemporada } from '../contexts/TemporadaContext';
+import { EditorJornadaModal } from '../components/EditorJornadaModal';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -102,7 +105,7 @@ function TeamSection({ label, iconMode, players, variant }) {
   );
 }
 
-function JornadaCard({ jornada, isFirst }) {
+function JornadaCard({ jornada, marcador, isFirst, adminMode, onEditar }) {
   const [open, setOpen] = useState(isFirst);
   const { numero, ganadores, perdedores, empate, reservas } = jornada;
   const isDraw = empate.length > 0 && ganadores.length === 0 && perdedores.length === 0;
@@ -133,13 +136,20 @@ function JornadaCard({ jornada, isFirst }) {
           <p className="font-[Oswald] text-[17px] font-bold uppercase tracking-[0.02em] text-[var(--sv-on-surface)] leading-none">
             Jornada {numero}
           </p>
+          {marcador ? (
+            <p className="mt-1.5 font-[Oswald] text-[15px] font-bold tabular-nums text-[var(--sv-on-surface)] leading-none">
+              <span className="text-[var(--sv-on-surface)]">Negro {marcador.puntos_a}</span>
+              <span className="mx-1.5 text-[var(--sv-on-surface-muted)]">–</span>
+              <span className="text-[var(--sv-primary)]">Rojo {marcador.puntos_b}</span>
+            </p>
+          ) : null}
           <p className="mt-1.5 text-[12px] font-bold text-[var(--sv-primary)] truncate">
             {resultLabel}
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-[11px] font-semibold text-[var(--sv-on-surface-muted)] uppercase tracking-[0.06em]">
-            {totalJugadores} jugaron · {reservas.length} res.
+          <span className="text-[11px] font-semibold text-[var(--sv-on-surface-muted)] uppercase tracking-[0.06em] text-right">
+            {totalJugadores} jugaron<br />{reservas.length} res.
           </span>
           <span
             className={`text-[var(--sv-on-surface-muted)] transition-transform text-xs ${open ? 'rotate-180' : ''}`}
@@ -184,6 +194,15 @@ function JornadaCard({ jornada, isFirst }) {
               variant="reserve"
             />
           )}
+          {adminMode && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEditar(numero); }}
+              className="self-start mt-1 border-2 border-[var(--sv-primary)] text-[var(--sv-primary)] px-4 py-2 text-[12px] font-bold uppercase tracking-[0.09em] font-[Oswald] hover:bg-[var(--sv-primary)] hover:text-white transition-colors"
+            >
+              Editar jornada
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -194,8 +213,11 @@ function JornadaCard({ jornada, isFirst }) {
 // Page
 // ---------------------------------------------------------------------------
 
-export function HistorialPage({ clasificacion, loading, error }) {
+export function HistorialPage({ clasificacion, marcadores, loading, error, onCambio }) {
   const historial = useMemo(() => buildHistorial(clasificacion), [clasificacion]);
+  const { autenticado } = useAdminAuth();
+  const { seleccionada } = useTemporada();
+  const [editando, setEditando] = useState(null); // número de jornada en edición
 
   // Número de la última jornada jugada (historial está ordenado de más reciente
   // a más antigua, así que el primer elemento tiene el número más alto).
@@ -228,9 +250,25 @@ export function HistorialPage({ clasificacion, loading, error }) {
       ) : (
         <div>
           {historial.map((j, i) => (
-            <JornadaCard key={j.numero} jornada={j} isFirst={i === 0} />
+            <JornadaCard
+              key={j.numero}
+              jornada={j}
+              marcador={marcadores?.get(j.numero)}
+              isFirst={i === 0}
+              adminMode={autenticado}
+              onEditar={(n) => setEditando(n)}
+            />
           ))}
         </div>
+      )}
+
+      {editando != null && seleccionada && (
+        <EditorJornadaModal
+          jornadaNumero={editando}
+          temporadaId={seleccionada.id}
+          onCerrar={() => setEditando(null)}
+          onGuardado={() => { setEditando(null); onCambio?.(); }}
+        />
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { useTemporada } from '../contexts/TemporadaContext';
 import { SelectorTemporada } from './SelectorTemporada';
 import { IconoEstrella } from './IconoEstrella';
+import { AdminToggle } from './AdminToggle';
 
 // Iconos planos monocromos — comparten viewBox 24 y `fill=currentColor` para
 // heredar el color del NavLink (activo blanco / inactivo gris).
@@ -62,11 +63,14 @@ export function Layout({ jornada }) {
               </div>
             </div>
           </div>
-          {jornada ? (
-            <div className="sv-corner-cut bg-[var(--sv-on-surface)] text-[var(--sv-surface)] px-4 py-2.5 text-[11px] font-bold tracking-[0.14em] uppercase shrink-0 font-[Oswald]">
-              Jornada {jornada}
-            </div>
-          ) : null}
+          <div className="flex items-center gap-2 shrink-0">
+            {jornada ? (
+              <div className="sv-corner-cut bg-[var(--sv-on-surface)] text-[var(--sv-surface)] px-4 py-2.5 text-[11px] font-bold tracking-[0.14em] uppercase font-[Oswald]">
+                Jornada {jornada}
+              </div>
+            ) : null}
+            <AdminToggle />
+          </div>
         </div>
       </header>
       <div className="sv-agit-strip" />

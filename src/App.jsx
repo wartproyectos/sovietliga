@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { TemporadaProvider } from './contexts/TemporadaContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { Layout } from './components/Layout';
 import { ClasificacionPage } from './pages/ClasificacionPage';
@@ -8,7 +9,7 @@ import { ConvocatoriaPage } from './pages/ConvocatoriaPage';
 import { EquiposPage } from './pages/EquiposPage';
 
 function AppRoutes() {
-  const { clasificacion, loading, error, jornada } = useSupabaseData();
+  const { clasificacion, marcadores, loading, error, jornada, refrescar } = useSupabaseData();
 
   return (
     <Routes>
@@ -19,11 +20,27 @@ function AppRoutes() {
         />
         <Route
           path="historial"
-          element={<HistorialPage clasificacion={clasificacion} loading={loading} error={error} />}
+          element={
+            <HistorialPage
+              clasificacion={clasificacion}
+              marcadores={marcadores}
+              loading={loading}
+              error={error}
+              onCambio={refrescar}
+            />
+          }
         />
         <Route
           path="convocatoria"
-          element={<ConvocatoriaPage clasificacion={clasificacion} loading={loading} error={error} ultimaJornada={jornada} />}
+          element={
+            <ConvocatoriaPage
+              clasificacion={clasificacion}
+              loading={loading}
+              error={error}
+              ultimaJornada={jornada}
+              onCambio={refrescar}
+            />
+          }
         />
         <Route
           path="equipos"
@@ -37,9 +54,11 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <TemporadaProvider>
-        <AppRoutes />
-      </TemporadaProvider>
+      <AdminAuthProvider>
+        <TemporadaProvider>
+          <AppRoutes />
+        </TemporadaProvider>
+      </AdminAuthProvider>
     </BrowserRouter>
   );
 }

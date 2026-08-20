@@ -9,8 +9,7 @@ export function ClasificacionPage({ clasificacion, loading, error, jornada }) {
 
   return (
     <>
-      {/* TODO: quitar `mostrarSiempre` cuando el aviso deje de estar en pruebas. */}
-      <AvisoFormulario mostrarSiempre />
+      <AvisoFormulario />
       <ClasificacionTable clasificacion={clasificacion} jornada={jornada} />
     </>
   );
