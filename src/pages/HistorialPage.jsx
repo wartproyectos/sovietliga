@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { PageState } from '../components/PageState';
+import { IconoEstrella } from '../components/IconoEstrella';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -59,95 +60,102 @@ function buildHistorial(clasificacion) {
 // Sub-componentes
 // ---------------------------------------------------------------------------
 
-function PlayerBadge({ nombre, variant }) {
-  const colors = {
-    win: 'bg-[var(--sv-primary)] text-white',
-    loss: 'bg-[var(--sv-surface)] text-[var(--sv-on-surface)]',
-    draw: 'bg-[#efe9c9] text-[var(--sv-on-surface)]',
-    reserve: 'bg-[var(--sv-surface-dim)] text-[var(--sv-on-surface)]',
+/** Tag con nombre — sólido rojo para ganadores, contorno negro para perdedores. */
+function PlayerTag({ nombre, variant }) {
+  const styles = {
+    win: 'bg-[var(--sv-primary)] text-white border-2 border-[var(--sv-primary)]',
+    loss: 'bg-transparent text-[var(--sv-on-surface)] border-2 border-[var(--sv-on-surface)]',
+    draw: 'bg-[var(--sv-surface-low)] text-[var(--sv-on-surface)] border-2 border-[var(--sv-on-surface)]',
+    reserve: 'bg-transparent text-[var(--sv-on-surface-soft)] border-2 border-dashed border-[var(--sv-on-surface-muted)]',
   };
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-[0.08em] ${colors[variant]}`}
+      className={`inline-flex items-center px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.02em] ${styles[variant]}`}
     >
       {nombre}
     </span>
   );
 }
 
-function TeamSection({ label, icon, players, variant }) {
+function TeamSection({ label, iconMode, players, variant }) {
   if (!players || players.length === 0) return null;
   return (
     <div>
-      <p className="text-xs font-bold uppercase tracking-[0.11em] text-[var(--sv-on-surface-muted)] mb-2">
-        {icon} {label}
-      </p>
+      <div className="flex items-center gap-2 mb-2.5">
+        {iconMode === 'star' ? (
+          <IconoEstrella className="w-4 h-4 text-[var(--sv-primary)] shrink-0" />
+        ) : iconMode === 'ring' ? (
+          <span className="inline-block w-3.5 h-3.5 border-2 border-[var(--sv-on-surface-muted)] rounded-full shrink-0" />
+        ) : (
+          <span className="inline-block w-3.5 h-3.5 bg-[var(--sv-on-surface-muted)] shrink-0" />
+        )}
+        <span className={`text-[12px] font-bold uppercase tracking-[0.02em] ${variant === 'win' ? 'text-[var(--sv-on-surface)]' : 'text-[var(--sv-on-surface-muted)]'}`}>
+          {label}
+        </span>
+      </div>
       <div className="flex flex-wrap gap-1.5">
         {players.map((n) => (
-          <PlayerBadge key={n} nombre={n} variant={variant} />
+          <PlayerTag key={n} nombre={n} variant={variant} />
         ))}
       </div>
     </div>
   );
 }
 
-function JornadaCard({ jornada }) {
-  const [open, setOpen] = useState(false);
+function JornadaCard({ jornada, isFirst }) {
+  const [open, setOpen] = useState(isFirst);
   const { numero, ganadores, perdedores, empate, reservas } = jornada;
   const isDraw = empate.length > 0 && ganadores.length === 0 && perdedores.length === 0;
   const totalJugadores = ganadores.length + perdedores.length + empate.length;
 
   let resultLabel;
-  let resultColor;
   if (isDraw) {
     resultLabel = 'Empate';
-    resultColor = 'text-amber-600';
   } else if (ganadores.length > 0 && perdedores.length > 0) {
     resultLabel =
       ganadores.length === 1
         ? `Ganó ${ganadores[0]}`
         : `Ganaron ${ganadores[0]} y ${ganadores.length - 1} más`;
-    resultColor = 'text-emerald-700';
   } else {
     resultLabel = 'Sin resultado';
-    resultColor = 'text-stone-400';
   }
 
+  // Las tarjetas comparten bordes con la siguiente para formar una tira continua.
   return (
-    <div className="sv-panel overflow-hidden">
-      {/* Header (siempre visible) */}
+    <div className={`bg-white border-2 border-[var(--sv-on-surface)] ${isFirst ? '' : 'border-t-0'}`}>
+      {/* Fila resumen (siempre visible). */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full px-6 py-5 flex items-center justify-between gap-3 hover:bg-[var(--sv-surface-low)] transition-colors text-left"
+        className="w-full px-4 py-4 flex items-center justify-between gap-3 text-left hover:bg-[var(--sv-surface-low)] transition-colors"
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="text-left min-w-0">
-            <p className="text-lg font-bold text-[var(--sv-on-surface)] truncate uppercase">
-              Jornada {numero}
-            </p>
-            <p className={`text-xs truncate uppercase tracking-[0.08em] ${resultColor}`}>{resultLabel}</p>
-          </div>
+        <div className="min-w-0">
+          <p className="font-[Oswald] text-[17px] font-bold uppercase tracking-[0.02em] text-[var(--sv-on-surface)] leading-none">
+            Jornada {numero}
+          </p>
+          <p className="mt-1.5 text-[12px] font-bold text-[var(--sv-primary)] truncate">
+            {resultLabel}
+          </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
+          <span className="text-[11px] font-semibold text-[var(--sv-on-surface-muted)] uppercase tracking-[0.06em]">
             {totalJugadores} jugaron · {reservas.length} res.
           </span>
           <span
-            className={`text-[var(--sv-on-surface-muted)] transition-transform text-sm ${open ? 'rotate-180' : ''}`}
+            className={`text-[var(--sv-on-surface-muted)] transition-transform text-xs ${open ? 'rotate-180' : ''}`}
           >
             ▼
           </span>
         </div>
       </button>
 
-      {/* Detalle expandible */}
+      {/* Detalle expandible. */}
       {open && (
-        <div className="px-6 pb-5 pt-3 border-t sv-ghost-line flex flex-col gap-3">
+        <div className="border-t-2 border-[var(--sv-on-surface)] px-4 py-4 flex flex-col gap-4">
           {ganadores.length > 0 && (
             <TeamSection
               label="Equipo ganador"
-              icon="🏆"
+              iconMode="star"
               players={ganadores}
               variant="win"
             />
@@ -155,7 +163,7 @@ function JornadaCard({ jornada }) {
           {perdedores.length > 0 && (
             <TeamSection
               label="Equipo perdedor"
-              icon="😤"
+              iconMode="ring"
               players={perdedores}
               variant="loss"
             />
@@ -163,7 +171,7 @@ function JornadaCard({ jornada }) {
           {empate.length > 0 && (
             <TeamSection
               label="Empate"
-              icon="🤝"
+              iconMode="ring"
               players={empate}
               variant="draw"
             />
@@ -171,7 +179,7 @@ function JornadaCard({ jornada }) {
           {reservas.length > 0 && (
             <TeamSection
               label="Reservas"
-              icon="🪑"
+              iconMode="square"
               players={reservas}
               variant="reserve"
             />
@@ -199,23 +207,28 @@ export function HistorialPage({ clasificacion, loading, error }) {
 
   return (
     <div className="flex flex-col gap-6 px-4">
-      {/* Cabecera */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div>
-          <h2 className="text-4xl font-bold text-[var(--sv-on-surface)] leading-none">Historial de Jornadas</h2>
-          <p className="text-sm text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] mt-2">{totalJornadas} jornadas registradas</p>
+      {/* Cabecera. */}
+      <div>
+        <div className="flex items-center gap-3">
+          <IconoEstrella className="w-6 h-6 text-[var(--sv-primary)] shrink-0" />
+          <h2 className="text-[28px] sm:text-[32px] leading-[0.96] font-bold text-[var(--sv-on-surface)]">
+            Historial de<br />Jornadas
+          </h2>
         </div>
+        <p className="mt-3 font-[Oswald] text-xs font-semibold uppercase tracking-[0.09em] text-[var(--sv-on-surface-muted)]">
+          {totalJornadas} jornadas registradas
+        </p>
       </div>
 
-      {/* Lista de jornadas */}
+      {/* Lista de jornadas — bordes fundidos en una sola tira. */}
       {historial.length === 0 ? (
-        <div className="sv-panel p-8 text-center text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
+        <div className="bg-white border-2 border-[var(--sv-on-surface)] p-8 text-center text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] font-[Oswald]">
           No hay jornadas con resultado registrado.
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {historial.map((j) => (
-            <JornadaCard key={j.numero} jornada={j} />
+        <div>
+          {historial.map((j, i) => (
+            <JornadaCard key={j.numero} jornada={j} isFirst={i === 0} />
           ))}
         </div>
       )}

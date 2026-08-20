@@ -6,7 +6,7 @@ function Chevron({ abierto }) {
     <svg
       viewBox="0 0 20 20"
       fill="currentColor"
-      className={`w-4 h-4 shrink-0 transition-transform ${abierto ? 'rotate-180' : ''}`}
+      className={`w-3 h-3 shrink-0 transition-transform ${abierto ? 'rotate-180' : ''}`}
       aria-hidden
     >
       <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 011.08 1.04l-4.25 4.38a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" />
@@ -40,26 +40,30 @@ export function SelectorTemporada() {
 
   // Con una sola temporada no hay nada que elegir; renderizamos texto plano.
   if (temporadas.length <= 1) {
-    return <span className="font-bold">{seleccionada.nombre}</span>;
+    return (
+      <span className="font-[Oswald] text-[13px] font-semibold uppercase tracking-[0.09em]">
+        {seleccionada.nombre}
+      </span>
+    );
   }
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative inline-block" ref={ref}>
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+        className="inline-flex items-center gap-1.5 font-[Oswald] text-[13px] font-semibold uppercase tracking-[0.09em] hover:opacity-80 transition-opacity"
         aria-haspopup="menu"
         aria-expanded={abierto}
       >
-        <span className="font-bold">{seleccionada.nombre}</span>
+        <span>{seleccionada.nombre}</span>
         <Chevron abierto={abierto} />
       </button>
 
       {abierto && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 z-50 min-w-[9rem] bg-[var(--sv-surface)] border-2 border-[var(--sv-on-surface)] shadow-lg"
+          className="absolute left-0 top-full mt-2 z-50 min-w-[9rem] bg-[var(--sv-surface-high)] border-2 border-[var(--sv-on-surface)] shadow-[6px_6px_0_rgba(0,0,0,0.35)]"
         >
           {temporadas.map((t) => {
             const activa = t.id === seleccionada.id;
@@ -73,7 +77,7 @@ export function SelectorTemporada() {
                   setSeleccionadaId(t.id);
                   setAbierto(false);
                 }}
-                className={`w-full text-left px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] flex items-center justify-between gap-3 transition-colors ${
+                className={`w-full text-left px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] font-[Oswald] flex items-center justify-between gap-3 transition-colors ${
                   activa
                     ? 'bg-[var(--sv-primary)] text-white'
                     : 'text-[var(--sv-on-surface)] hover:bg-[var(--sv-surface-low)]'

@@ -1,17 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Work+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --sv-primary: #9e0000;
-  --sv-primary-strong: #cc0000;
-  --sv-primary-ink: #930000;
-  --sv-surface: #fdfaeb;
-  --sv-surface-low: #f1eedf;
+  --sv-primary: #c41230;
+  --sv-primary-strong: #c41230;
+  --sv-primary-ink: #a20d24;
+  --sv-primary-hover: #e63946;
+
+  --sv-surface: #f2ead9;
+  --sv-surface-low: #ece2cc;
   --sv-surface-high: #ffffff;
-  --sv-surface-dim: #dddacd;
-  --sv-on-surface: #1c1c14;
-  --sv-on-surface-muted: #4b4b40;
-  --sv-tertiary: #705d00;
+  --sv-surface-dim: #dcd2bc;
+
+  --sv-on-surface: #161412;
+  --sv-on-surface-muted: #8a827e;
+  --sv-on-surface-soft: #5c5450;
+
+  --sv-scrim: #5c4444;
+  --sv-verde: #2d6a4f;
+  --sv-azul: #1d4e89;
+
   --sv-gold: #c9a227;
   --sv-gold-strong: #a8851a;
 }
@@ -30,7 +38,7 @@ body {
   margin: 0;
   background: var(--sv-surface);
   color: var(--sv-on-surface);
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'Archivo', sans-serif;
 }
 
 h1,
@@ -38,38 +46,105 @@ h2,
 h3,
 h4,
 .sv-display {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Oswald', sans-serif;
   text-transform: uppercase;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.02em;
+  font-weight: 700;
 }
 
 .sv-panel {
-  background: var(--sv-surface-low);
+  background: var(--sv-surface);
 }
 
 .sv-card {
   background: var(--sv-surface-high);
+  border: 2px solid var(--sv-on-surface);
+}
+
+.sv-card-print {
+  background: var(--sv-surface);
+  border: 3px solid var(--sv-on-surface);
+  box-shadow: 8px 8px 0 rgb(0 0 0 / 40%);
 }
 
 .sv-ghost-line {
-  border-color: rgb(28 28 20 / 15%);
+  border-color: rgb(22 20 18 / 15%);
 }
 
-.sv-btn-primary {
-  background: linear-gradient(120deg, var(--sv-primary) 0%, var(--sv-primary-ink) 100%);
+/* Franja diagonal — el motivo constructivista recurrente bajo los headers. */
+.sv-agit-strip {
+  height: 14px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--sv-on-surface) 0 8px,
+    var(--sv-primary) 8px 16px
+  );
+}
+
+/* CTA en forma de paralelogramo. */
+.sv-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--sv-primary);
   color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.09em;
+  font-family: 'Oswald', sans-serif;
   font-weight: 700;
+  padding: 14px 24px;
+  clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+  transition: background-color 0.12s ease;
 }
 
-.sv-agit-strip {
-  height: 24px;
-  background: var(--sv-surface-dim);
+.sv-cta:hover {
+  background: var(--sv-primary-hover);
 }
 
+.sv-cta[disabled],
+.sv-cta.sv-cta--disabled {
+  background: var(--sv-on-surface-muted);
+  color: var(--sv-surface);
+  cursor: not-allowed;
+}
+
+/* Botón/badge con la esquina inferior izquierda cortada — usado para la insignia
+   de jornada y para botones cuadrados de acción. */
+.sv-corner-cut {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+/* Acento subrayado del título de sección: rectángulo rojo con punta cortada. */
+.sv-accent-bar {
+  width: 70px;
+  height: 8px;
+  background: var(--sv-primary);
+  clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+}
+
+/* Se compatibiliza el botón primario clásico con el nuevo CTA. */
+.sv-btn-primary {
+  background: var(--sv-primary);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  transition: background-color 0.12s ease;
+}
+
+.sv-btn-primary:hover {
+  background: var(--sv-primary-hover);
+}
+
+/* Contorno del jugador campeón en la clasificación. */
 .sv-champion {
-  background: linear-gradient(90deg, rgb(201 162 39 / 30%) 0%, rgb(201 162 39 / 8%) 100%) !important;
+  background: linear-gradient(
+    90deg,
+    rgb(201 162 39 / 30%) 0%,
+    rgb(201 162 39 / 8%) 100%
+  ) !important;
   box-shadow: inset 5px 0 0 var(--sv-gold-strong);
 }
 
@@ -79,11 +154,16 @@ h4,
   gap: 0.3em;
   background: var(--sv-gold-strong);
   color: #fff;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Oswald', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 0.15em 0.5em;
+  padding: 0.2em 0.55em;
   line-height: 1;
   white-space: nowrap;
+}
+
+::selection {
+  background: var(--sv-primary);
+  color: #fff;
 }

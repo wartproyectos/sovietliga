@@ -41,13 +41,13 @@ export function BotonWhatsapp({ mensaje, deshabilitado, motivo }) {
         <button
           type="button"
           disabled
-          className="w-full py-4 font-bold text-base flex items-center justify-center gap-2 bg-[#b9b6aa] text-[var(--sv-surface)] cursor-not-allowed uppercase tracking-[0.08em]"
+          className="w-full py-4 font-[Oswald] font-bold text-[14px] flex items-center justify-center gap-2 bg-[var(--sv-on-surface-muted)] text-[var(--sv-surface)] cursor-not-allowed uppercase tracking-[0.1em]"
         >
           <IconoWhatsapp />
           Copiar para WhatsApp
         </button>
         {motivo ? (
-          <p className="text-xs text-center text-[var(--sv-on-surface-muted)] uppercase tracking-[0.06em]">
+          <p className="text-xs text-center text-[var(--sv-on-surface-muted)] uppercase tracking-[0.06em] font-[Oswald] font-semibold">
             {motivo}
           </p>
         ) : null}
@@ -60,7 +60,7 @@ export function BotonWhatsapp({ mensaje, deshabilitado, motivo }) {
       type="button"
       onClick={copiar}
       style={{ backgroundColor: copiado ? '#128C7E' : VERDE }}
-      className="w-full py-4 font-bold text-base text-white flex items-center justify-center gap-2 uppercase tracking-[0.08em] transition-colors hover:brightness-95"
+      className="w-full py-4 font-[Oswald] font-bold text-[14px] text-white flex items-center justify-center gap-2 uppercase tracking-[0.1em] transition-colors hover:brightness-95"
     >
       {copiado ? '✓' : <IconoWhatsapp />}
       {copiado ? 'Copiado al portapapeles' : 'Copiar para WhatsApp'}

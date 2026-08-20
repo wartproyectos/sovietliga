@@ -1,3 +1,5 @@
+import { IconoEstrella } from './IconoEstrella';
+
 /**
  * Estado compartido de carga / error para las páginas.
  *
@@ -11,12 +13,12 @@
 export function PageState({ loading, error, loadingMessage = 'Cargando datos...' }) {
   if (error) {
     return (
-      <div className="sv-panel p-8 mx-3 sm:mx-4">
-        <p className="font-bold text-[var(--sv-primary)] mb-2 uppercase tracking-[0.08em]">
+      <div className="mx-4 border-2 border-[var(--sv-on-surface)] bg-white p-6">
+        <p className="font-[Oswald] font-bold text-[var(--sv-primary)] mb-2 uppercase tracking-[0.09em]">
           No se pudieron cargar los datos
         </p>
         <p className="text-sm text-[var(--sv-on-surface)]">{error}</p>
-        <p className="mt-3 text-xs text-[var(--sv-on-surface-muted)] uppercase tracking-[0.06em]">
+        <p className="mt-3 text-xs text-[var(--sv-on-surface-muted)] uppercase tracking-[0.06em] font-[Oswald]">
           Si el problema persiste, contacta al administrador.
         </p>
       </div>
@@ -25,9 +27,11 @@ export function PageState({ loading, error, loadingMessage = 'Cargando datos...'
 
   if (loading) {
     return (
-      <div className="sv-panel p-10 text-left text-[var(--sv-on-surface-muted)] mx-3 sm:mx-4">
-        <div className="text-3xl mb-3">★</div>
-        {loadingMessage}
+      <div className="mx-4 border-2 border-[var(--sv-on-surface)] bg-white p-8 text-left text-[var(--sv-on-surface-muted)] flex items-center gap-3">
+        <IconoEstrella className="w-6 h-6 text-[var(--sv-primary)] shrink-0" />
+        <span className="font-[Oswald] uppercase tracking-[0.09em] text-sm font-semibold">
+          {loadingMessage}
+        </span>
       </div>
     );
   }
