@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { TemporadaProvider } from './contexts/TemporadaContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import { TesteoProvider } from './contexts/TesteoContext';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { Layout } from './components/Layout';
 import { ClasificacionPage } from './pages/ClasificacionPage';
@@ -56,7 +57,9 @@ function App() {
     <BrowserRouter>
       <AdminAuthProvider>
         <TemporadaProvider>
-          <AppRoutes />
+          <TesteoProvider>
+            <AppRoutes />
+          </TesteoProvider>
         </TemporadaProvider>
       </AdminAuthProvider>
     </BrowserRouter>

@@ -28,6 +28,18 @@
 
   --sv-gold: #c9a227;
   --sv-gold-strong: #a8851a;
+
+  /* Azul pizarra petróleo — rol "control/navegación". Sirve para pestañas y
+     controles cuando negro y rojo están reservados a otro significado en la
+     misma pantalla (p. ej. equipos). No ocupa el hueco de --sv-azul, que es
+     el cobalto burocrático de "voluntario a reserva".
+     Tres tonos para que el estado activo/inactivo se lea a la primera:
+       -soft   → tab inactiva (más clara, receded)
+       base    → contenedor / barra de tabs
+       -strong → tab activa (más oscura, "pressed") */
+  --sv-slate-soft: #4a6a7d;
+  --sv-slate: #2f4858;
+  --sv-slate-strong: #17242c;
 }
 
 * {

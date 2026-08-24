@@ -21,11 +21,19 @@ export function abreviarTemporada(nombre) {
  *
  * Recibe nombres ya resueltos, no objetos de jugador: así el formato del
  * mensaje no depende de cómo se calculen los equipos.
+ *
+ * Dos formatos según lo que se pase:
+ * - Si viene `convocados`, sale un mensaje plano de convocatoria (convocados +
+ *   reservas). Es el formato por defecto de la app ahora mismo, mientras la
+ *   auto-generación de equipos está detrás de un toggle.
+ * - Si no, se usan `equipoNegro`/`equipoRojo`/`alineador` y sale el mensaje
+ *   completo con los dos equipos ya repartidos.
  */
 export function construirMensajeWhatsapp({
   temporada,
   numeroJornada,
   fecha,
+  convocados = null,
   alineador = null,
   equipoNegro = [],
   equipoRojo = [],
@@ -36,14 +44,20 @@ export function construirMensajeWhatsapp({
   const partes = [
     `Convo Soviet ${abreviarTemporada(temporada)}: Jornada ${numeroJornada} - ${formatFecha(fecha)}`,
   ];
+
   if (alineador) partes.push('', `📋 Alineador: ${alineador}`);
-  partes.push(
-    '',
-    bloque('🕷Equipo Negro', equipoNegro),
-    '',
-    bloque('🌹Equipo Rojo', equipoRojo),
-    '',
-    bloque('🪑Reservas', reservas),
-  );
+
+  if (convocados) {
+    partes.push('', bloque('⚽ Convocados', convocados));
+  } else {
+    partes.push(
+      '',
+      bloque('🕷Equipo Negro', equipoNegro),
+      '',
+      bloque('🌹Equipo Rojo', equipoRojo),
+    );
+  }
+
+  partes.push('', bloque('🪑Reservas', reservas));
   return partes.join('\n');
 }

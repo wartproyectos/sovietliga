@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDisponibilidad } from '../hooks/useDisponibilidad';
 import { useTemporada } from '../contexts/TemporadaContext';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { useTesteo } from '../contexts/TesteoContext';
 import { PageState } from '../components/PageState';
 import { IconoEstrella } from '../components/IconoEstrella';
 import { EditorJornadaModal } from '../components/EditorJornadaModal';
@@ -11,7 +12,6 @@ import { balancearEquipos } from '../lib/equipos';
 import { construirMensajeWhatsapp } from '../lib/mensajeWhatsapp';
 import { BotonWhatsapp } from '../components/BotonWhatsapp';
 import { ComoFuncionaModal } from '../components/ComoFuncionaModal';
-import { posLabel } from '../data/posiciones';
 
 /** Fecha local a YYYY-MM-DD, evitando el desfase que introduce toISOString(). */
 function toIsoDay(date) {
@@ -106,17 +106,43 @@ function GrupoRespuestas({ titulo, extra, color, icono: Icono, nombres, tono, bo
 }
 
 /** Fila de jugador dentro de la convocatoria. */
-function FilaJugador({ jugador, indice, tono, etiqueta }) {
+function FilaJugador({
+  jugador,
+  indice,
+  tono,
+  esAlineador = false,
+  arrastreProps = null,
+  arrastrando = false,
+  objetivoSoltar = false,
+}) {
   const fondo = tono === 'titular' ? 'bg-white' : 'bg-[var(--sv-surface-low)]';
+  const efectos = arrastrando
+    ? 'opacity-40 cursor-grabbing'
+    : objetivoSoltar
+      ? 'ring-2 ring-inset ring-[var(--sv-slate)] bg-[color:rgb(74_106_125/0.12)]'
+      : arrastreProps
+        ? 'cursor-grab'
+        : '';
   return (
-    <div className={`flex items-center gap-3 px-4 py-2.5 border-b sv-ghost-line last:border-b-0 ${fondo}`}>
+    <div
+      {...(arrastreProps ?? {})}
+      className={`flex items-center gap-3 px-4 py-2.5 border-b sv-ghost-line last:border-b-0 transition-opacity select-none ${fondo} ${efectos}`}
+    >
       <span className="font-[Oswald] text-sm font-bold text-[var(--sv-primary)] w-6 shrink-0 tabular-nums">
         {String(indice).padStart(2, '0')}
       </span>
       <span className="font-bold uppercase text-[13px] text-[var(--sv-on-surface)] flex-1 min-w-0 truncate">
+        {esAlineador && (
+          <IconoEstrella
+            className="inline-block w-3.5 h-3.5 mr-1.5 -mt-0.5 align-middle text-[var(--sv-primary)] shrink-0"
+            aria-label="Alineador de la jornada"
+          />
+        )}
         {jugador.nombre}
-        {etiqueta ? (
-          <span className="ml-2 text-[10px] font-normal normal-case text-amber-600">{etiqueta}</span>
+        {esAlineador ? (
+          <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.09em] text-[var(--sv-primary)] font-[Oswald]">
+            Alineador
+          </span>
         ) : null}
       </span>
       <span className="font-[Oswald] text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-[0.05em] shrink-0 text-right">
@@ -128,40 +154,141 @@ function FilaJugador({ jugador, indice, tono, etiqueta }) {
   );
 }
 
-/** Fila dentro de un equipo. */
-function FilaEquipo({ jugador, indice, esCambio }) {
-  const pos = jugador.pos_principal;
+/**
+ * Cabecera con dos pestañas: la vista plana de convocados y el reparto
+ * sugerido en equipos. La segunda queda deshabilitada si aún no hay 12
+ * titulares (no hay reparto que enseñar).
+ */
+function TabsConvocatoria({ vista, onCambio, equiposDisponibles, totalConvocados }) {
+  const tabs = [
+    { id: 'convocados', label: 'Convocados', extra: `${totalConvocados}/12` },
+    { id: 'equipos', label: 'Equipos sugeridos', extra: null },
+  ];
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b sv-ghost-line last:border-b-0 bg-white">
-      <span className="font-[Oswald] text-[10px] font-bold text-[var(--sv-on-surface-muted)] w-14 shrink-0 uppercase tracking-[0.06em]">
-        {esCambio ? 'Cambio' : String(indice).padStart(2, '0')}
-      </span>
-      <span className="font-bold uppercase text-[13px] text-[var(--sv-on-surface)] flex-1 min-w-0 truncate">
-        {jugador.nombre}
-      </span>
-      <span className="font-[Oswald] text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-[0.05em] shrink-0 text-right">
-        {pos ? `${posLabel(pos)} (${pos})` : 'sin posición'} · {Math.round(jugador.porcentaje)}% V
-      </span>
+    <div
+      role="tablist"
+      className="flex bg-[var(--sv-slate)] divide-x-2 divide-[color:rgb(255_255_255/0.12)]"
+    >
+      {tabs.map((t) => {
+        const activa = vista === t.id;
+        const bloqueada = t.id === 'equipos' && !equiposDisponibles;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={activa}
+            disabled={bloqueada}
+            onClick={() => !bloqueada && onCambio(t.id)}
+            title={bloqueada ? 'Necesitas 12 convocados para repartir los equipos' : ''}
+            className={`flex-1 px-3 py-3 flex items-center justify-center gap-2 font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] transition-colors ${
+              activa
+                ? 'bg-[var(--sv-slate-strong)] text-white shadow-[inset_0_-3px_0_rgb(255_255_255/0.9)]'
+                : bloqueada
+                  ? 'bg-[var(--sv-slate-soft)] text-white/40 cursor-not-allowed'
+                  : 'bg-[var(--sv-slate-soft)] text-white/85 hover:bg-[var(--sv-slate)] hover:text-white'
+            }`}
+          >
+            <span>{t.label}</span>
+            {t.extra && (
+              <span
+                className={`font-[Oswald] text-[10px] font-bold tracking-[0.06em] ${
+                  activa ? 'text-white/80' : 'text-white/60'
+                }`}
+              >
+                {t.extra}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function TarjetaEquipo({ titulo, emoji, jugadores, cabecera }) {
+/**
+ * Sub-bloque de un equipo dentro de la sección de convocatoria: cabecera
+ * coloreada (negro o rojo) y filas de jugadores. Sin borde propio — vive
+ * dentro del border-2 del contenedor y añade un separador arriba para
+ * distinguirlo del contenido anterior.
+ */
+function SubEquipo({
+  titulo,
+  emoji,
+  jugadores,
+  alineador,
+  cabeceraBg,
+  construirArrastreProps = null,
+  arrastrandoNombre = null,
+  objetivoNombre = null,
+}) {
   const media = jugadores.reduce((s, p) => s + p.porcentaje, 0) / (jugadores.length || 1);
   return (
-    <section className="border-2 border-[var(--sv-on-surface)]">
-      <div className={`px-4 py-3 flex items-center justify-between gap-3 ${cabecera}`}>
-        <h3 className="font-[Oswald] text-sm font-bold uppercase tracking-[0.1em] flex items-center gap-2">
+    <div className="border-t-2 border-[var(--sv-on-surface)] first:border-t-0">
+      <div className={`px-4 py-2.5 flex items-center justify-between gap-3 ${cabeceraBg}`}>
+        <h4 className="font-[Oswald] text-[13px] font-bold uppercase tracking-[0.1em] flex items-center gap-2">
           <span className="text-base">{emoji}</span> {titulo}
-        </h3>
-        <span className="font-[Oswald] text-[11px] font-bold tracking-[0.08em]">
+        </h4>
+        <span className="font-[Oswald] text-[10px] font-bold tracking-[0.08em] tabular-nums">
           Media {Math.round(media)}% V
         </span>
       </div>
       {jugadores.map((j, i) => (
-        <FilaEquipo key={j.nombre} jugador={j} indice={i + 1} esCambio={i === jugadores.length - 1} />
+        <FilaJugador
+          key={j.nombre}
+          jugador={j}
+          indice={i + 1}
+          tono="titular"
+          esAlineador={alineador?.nombre === j.nombre}
+          arrastreProps={construirArrastreProps ? construirArrastreProps(j.nombre) : null}
+          arrastrando={arrastrandoNombre === j.nombre}
+          objetivoSoltar={objetivoNombre === j.nombre}
+        />
       ))}
-    </section>
+    </div>
+  );
+}
+
+/**
+ * Interruptor sólo-admin para la restricción viernes→domingo.
+ *
+ * Cuando está desactivada, la convocatoria se puede abrir cualquier día y las
+ * respuestas del formulario se leen sin filtrar por ventana. Sirve para probar
+ * la funcionalidad sin esperar al fin de semana.
+ */
+function ToggleModoPruebas({ siempreAbierta, onCambio }) {
+  return (
+    <div className="border-2 border-dashed border-[var(--sv-on-surface-muted)] bg-white px-4 py-3 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--sv-on-surface)]">
+          Modo pruebas · admin
+        </p>
+        <p className="mt-1 text-[12px] text-[var(--sv-on-surface-muted)] leading-snug">
+          {siempreAbierta
+            ? 'Convocatoria abierta cualquier día. Se ignora la ventana viernes→domingo.'
+            : 'Restricción activa: sólo funciona entre viernes 00:00 y domingo 12:00.'}
+        </p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={siempreAbierta}
+        onClick={() => onCambio(!siempreAbierta)}
+        title={siempreAbierta ? 'Reactivar la restricción viernes→domingo' : 'Dejar la convocatoria siempre abierta'}
+        className={`shrink-0 relative inline-flex h-7 w-12 items-center border-2 transition-colors ${
+          siempreAbierta
+            ? 'bg-[var(--sv-verde)] border-[var(--sv-verde)]'
+            : 'bg-[var(--sv-surface-low)] border-[var(--sv-on-surface-muted)]'
+        }`}
+      >
+        <span
+          aria-hidden
+          className={`inline-block h-5 w-5 bg-white transition-transform ${
+            siempreAbierta ? 'translate-x-[22px]' : 'translate-x-[2px]'
+          }`}
+        />
+      </button>
+    </div>
   );
 }
 
@@ -170,6 +297,7 @@ function TarjetaEquipo({ titulo, emoji, jugadores, cabecera }) {
 export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error: clasifError, ultimaJornada, onCambio }) {
   const { activa } = useTemporada();
   const { autenticado } = useAdminAuth();
+  const { siempreAbierta, setSiempreAbierta } = useTesteo();
   const {
     respuestas,
     invitados,
@@ -182,6 +310,12 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   const [verDetalle, setVerDetalle] = useState(false);
   const [editorAbierto, setEditorAbierto] = useState(false);
   const [comoFuncionaAbierto, setComoFuncionaAbierto] = useState(false);
+  const [vistaConvocatoria, setVistaConvocatoria] = useState('convocados'); // 'convocados' | 'equipos'
+  // Reajustes manuales del reparto: { [nombre]: 'a' | 'b' }. Sólo contiene las
+  // desviaciones respecto a lo que sugirió balancearEquipos.
+  const [equipoOverride, setEquipoOverride] = useState({});
+  const [arrastrandoNombre, setArrastrandoNombre] = useState(null);
+  const [objetivoNombre, setObjetivoNombre] = useState(null);
 
   const loading = clasifLoading || dispLoading;
   const error = clasifError || dispError;
@@ -231,21 +365,98 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
     };
   }, [clasificacion, respuestas, invitados, jornada, ultimaJornada]);
 
-  // Precarga para el editor de registro: reparte los 12 titulares por equipo
-  // según el balanceador y marca los reservas como tal. Sólo se usa si la
-  // jornada aún no tiene datos guardados; una vez registrada, el editor lee
-  // el estado real desde BD y esto se ignora.
+  // Si la vista de equipos deja de estar disponible (por bajar de 12 titulares),
+  // volvemos automáticamente a la de convocados para no dejar el toggle en un
+  // estado sin contenido.
+  useEffect(() => {
+    if (!equipos && vistaConvocatoria === 'equipos') {
+      setVistaConvocatoria('convocados');
+    }
+  }, [equipos, vistaConvocatoria]);
+
+  // Cambia la convocatoria (nueva jornada, respuestas actualizadas): los
+  // reajustes manuales anteriores dejan de tener sentido, hay que descartarlos.
+  useEffect(() => {
+    setEquipoOverride({});
+  }, [equipos]);
+
+  // Reparto final que se pinta y se comparte: la sugerencia del algoritmo con
+  // los intercambios manuales aplicados encima.
+  const equiposDisplay = useMemo(() => {
+    if (!equipos) return null;
+    if (Object.keys(equipoOverride).length === 0) return equipos;
+    const equipo1 = [];
+    const equipo2 = [];
+    for (const p of equipos.equipo1) {
+      ((equipoOverride[p.nombre] ?? 'a') === 'a' ? equipo1 : equipo2).push(p);
+    }
+    for (const p of equipos.equipo2) {
+      ((equipoOverride[p.nombre] ?? 'b') === 'a' ? equipo1 : equipo2).push(p);
+    }
+    return { equipo1, equipo2 };
+  }, [equipos, equipoOverride]);
+
+  // Precarga para el editor de registro: usa el reparto tal y como está en
+  // pantalla, con los intercambios manuales aplicados. Así, si el usuario
+  // movió jugadores antes de "Registrar resultado", el editor se abre con la
+  // misma composición que estaban mirando.
   const precargaEditor = useMemo(() => {
-    if (!equipos || !convocatoria) return null;
+    if (!equiposDisplay || !convocatoria) return null;
     return {
       titulares: [
-        ...equipos.equipo1.map((p) => ({ jugador_id: p.id, equipo: 'a' })),
-        ...equipos.equipo2.map((p) => ({ jugador_id: p.id, equipo: 'b' })),
+        ...equiposDisplay.equipo1.map((p) => ({ jugador_id: p.id, equipo: 'a' })),
+        ...equiposDisplay.equipo2.map((p) => ({ jugador_id: p.id, equipo: 'b' })),
       ],
       reservas: convocatoria.reservas.map((p) => p.id).filter((id) => id != null),
       alineadorId: alineador?.id ?? null,
     };
-  }, [equipos, convocatoria, alineador]);
+  }, [equiposDisplay, convocatoria, alineador]);
+
+  // Qué equipo tiene ahora mismo un jugador — usado por los handlers de arrastre
+  // para saber si el drop cruza de equipo o no.
+  const equipoActualDe = (nombre) => {
+    if (equipoOverride[nombre]) return equipoOverride[nombre];
+    if (!equipos) return null;
+    return equipos.equipo1.some((p) => p.nombre === nombre) ? 'a' : 'b';
+  };
+
+  const intercambiar = (nombreA, nombreB) => {
+    if (!equipos || nombreA === nombreB) return;
+    const teamA = equipoActualDe(nombreA);
+    const teamB = equipoActualDe(nombreB);
+    if (!teamA || !teamB || teamA === teamB) return;
+    setEquipoOverride((prev) => ({ ...prev, [nombreA]: teamB, [nombreB]: teamA }));
+  };
+
+  const construirArrastreProps = (nombre) => ({
+    draggable: true,
+    onDragStart: (e) => {
+      setArrastrandoNombre(nombre);
+      e.dataTransfer.setData('text/plain', nombre);
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    onDragEnd: () => {
+      setArrastrandoNombre(null);
+      setObjetivoNombre(null);
+    },
+    onDragOver: (e) => {
+      if (!arrastrandoNombre || arrastrandoNombre === nombre) return;
+      if (equipoActualDe(arrastrandoNombre) === equipoActualDe(nombre)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (objetivoNombre !== nombre) setObjetivoNombre(nombre);
+    },
+    onDragLeave: () => {
+      if (objetivoNombre === nombre) setObjetivoNombre(null);
+    },
+    onDrop: (e) => {
+      e.preventDefault();
+      const origen = e.dataTransfer.getData('text/plain') || arrastrandoNombre;
+      intercambiar(origen, nombre);
+      setArrastrandoNombre(null);
+      setObjetivoNombre(null);
+    },
+  });
 
   if (loading || error) {
     return <PageState loading={loading} error={error} loadingMessage="Cargando convocatoria…" />;
@@ -263,7 +474,12 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   const now = new Date();
   let estadoVentana;
   let estadoBg;
-  if (now < ventana.inicio) {
+  if (siempreAbierta) {
+    // Modo pruebas: la restricción viernes→domingo está desactivada, así que
+    // la ventana se muestra abierta pase lo que pase.
+    estadoVentana = 'Abierta';
+    estadoBg = 'bg-[var(--sv-verde)]';
+  } else if (now < ventana.inicio) {
     estadoVentana = 'Próximamente';
     estadoBg = 'bg-[var(--sv-on-surface-muted)]';
   } else if (now <= ventana.fin) {
@@ -280,16 +496,24 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
       (grupos?.noConvocables.length ?? 0) >
     0;
 
-  const promocionados = new Set((convocatoria?.promocionados ?? []).map((p) => p.nombre));
-
-  const mensaje = equipos
+  // El mensaje sigue a la vista activa: si estás mirando los equipos ya
+  // repartidos, se comparte ese formato; si no, la lista plana de convocados.
+  // Reservas y alineador se incluyen siempre.
+  const enVistaEquipos = vistaConvocatoria === 'equipos' && Boolean(equiposDisplay);
+  const mensaje = convocatoria
     ? construirMensajeWhatsapp({
         temporada: activa?.nombre,
         numeroJornada: jornada.numero,
         fecha: jornada.fecha,
         alineador: alineador?.nombre ?? null,
-        equipoNegro: equipos.equipo1.map((p) => p.nombre),
-        equipoRojo: equipos.equipo2.map((p) => p.nombre),
+        ...(enVistaEquipos
+          ? {
+              equipoNegro: equiposDisplay.equipo1.map((p) => p.nombre),
+              equipoRojo: equiposDisplay.equipo2.map((p) => p.nombre),
+            }
+          : {
+              convocados: convocatoria.titulares.map((p) => p.nombre),
+            }),
         reservas: convocatoria.reservas.map((p) => p.nombre),
       })
     : '';
@@ -340,6 +564,13 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
         </div>
       </div>
 
+      {autenticado && (
+        <ToggleModoPruebas
+          siempreAbierta={siempreAbierta}
+          onCambio={setSiempreAbierta}
+        />
+      )}
+
       {!hayRespuestas ? (
         <div className="bg-white border-2 border-dashed border-[var(--sv-on-surface-muted)] p-5 italic text-[13px] text-[var(--sv-on-surface-soft)]">
           Todavía no hay respuestas en esta ventana. La convocatoria se genera sola en cuanto
@@ -347,64 +578,62 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
         </div>
       ) : (
         <>
-          {/* Alineador designado — determinista por número de jornada. */}
-          {alineador && (
-            <div className="border-2 border-[var(--sv-on-surface)]">
-              <div className="bg-[var(--sv-on-surface)] px-4 py-2 flex items-center gap-2">
-                <IconoEstrella className="w-4 h-4 text-[var(--sv-primary)] shrink-0" />
-                <span className="font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--sv-surface)]">
-                  Alineador de la jornada
-                </span>
-              </div>
-              <p className="px-4 py-3 bg-white font-bold uppercase text-[15px] text-[var(--sv-on-surface)] tracking-[0.02em]">
-                {alineador.nombre}
-              </p>
-            </div>
-          )}
+          {/* Convocatoria con dos vistas: lista plana de convocados, o el
+              reparto sugerido en equipos. La pestaña de equipos se deshabilita
+              cuando no hay 12 titulares exactos (no se puede repartir). */}
+          <section className="border-2 border-[var(--sv-on-surface)]">
+            <TabsConvocatoria
+              vista={vistaConvocatoria}
+              onCambio={setVistaConvocatoria}
+              equiposDisponibles={Boolean(equipos)}
+              totalConvocados={convocatoria.titulares.length}
+            />
 
-          {/* Equipos — con 12 exactos; si no, lista plana. */}
-          {equipos ? (
-            <>
-              <TarjetaEquipo
-                titulo="Equipo Negro"
-                emoji="🕷"
-                jugadores={equipos.equipo1}
-                cabecera="bg-[var(--sv-on-surface)] text-white"
-              />
-              <TarjetaEquipo
-                titulo="Equipo Rojo"
-                emoji="🌹"
-                jugadores={equipos.equipo2}
-                cabecera="bg-[var(--sv-primary)] text-white"
-              />
-            </>
-          ) : (
-            <section className="border-2 border-[var(--sv-on-surface)]">
-              <div className="px-4 py-3 bg-[var(--sv-on-surface)] text-[var(--sv-surface)] flex items-center justify-between gap-3">
-                <h3 className="font-[Oswald] text-sm font-bold uppercase tracking-[0.1em]">Convocados</h3>
-                <span className="font-[Oswald] text-[11px] font-bold tracking-[0.08em]">
-                  {convocatoria.titulares.length}/{PLAZAS_CONVOCATORIA}
-                </span>
-              </div>
-              {convocatoria.titulares.map((j, i) => (
-                <FilaJugador
-                  key={j.nombre}
-                  jugador={j}
-                  indice={i + 1}
-                  tono="titular"
-                  etiqueta={promocionados.has(j.nombre) ? 'subió desde reserva' : null}
+            {vistaConvocatoria === 'convocados' || !equipos ? (
+              <>
+                {convocatoria.titulares.map((j, i) => (
+                  <FilaJugador
+                    key={j.nombre}
+                    jugador={j}
+                    indice={i + 1}
+                    tono="titular"
+                    esAlineador={alineador?.nombre === j.nombre}
+                  />
+                ))}
+                {convocatoria.invitadosNecesarios > 0 && (
+                  <div className="px-4 py-3 bg-[color:rgb(196_18_48/0.08)] text-xs uppercase tracking-[0.06em] text-[var(--sv-primary)] font-[Oswald] font-bold">
+                    Faltan {convocatoria.invitadosNecesarios} jugadores ·{' '}
+                    {invitados.length > 0
+                      ? `${invitados.length} invitado(s) apuntado(s)`
+                      : 'hay que buscar amigos'}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <SubEquipo
+                  titulo="Equipo Negro"
+                  emoji="🕷"
+                  jugadores={equiposDisplay.equipo1}
+                  alineador={alineador}
+                  cabeceraBg="bg-[var(--sv-on-surface)] text-white"
+                  construirArrastreProps={construirArrastreProps}
+                  arrastrandoNombre={arrastrandoNombre}
+                  objetivoNombre={objetivoNombre}
                 />
-              ))}
-              {convocatoria.invitadosNecesarios > 0 && (
-                <div className="px-4 py-3 bg-[color:rgb(196_18_48/0.08)] text-xs uppercase tracking-[0.06em] text-[var(--sv-primary)] font-[Oswald] font-bold">
-                  Faltan {convocatoria.invitadosNecesarios} jugadores ·{' '}
-                  {invitados.length > 0
-                    ? `${invitados.length} invitado(s) apuntado(s)`
-                    : 'hay que buscar amigos'}
-                </div>
-              )}
-            </section>
-          )}
+                <SubEquipo
+                  titulo="Equipo Rojo"
+                  emoji="🌹"
+                  jugadores={equiposDisplay.equipo2}
+                  alineador={alineador}
+                  cabeceraBg="bg-[var(--sv-primary)] text-white"
+                  construirArrastreProps={construirArrastreProps}
+                  arrastrandoNombre={arrastrandoNombre}
+                  objetivoNombre={objetivoNombre}
+                />
+              </>
+            )}
+          </section>
 
           {/* Reservas. */}
           <section className="border-2 border-[var(--sv-on-surface)]">
@@ -427,8 +656,8 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
 
           <BotonWhatsapp
             mensaje={mensaje}
-            deshabilitado={!equipos}
-            motivo={`Hacen falta ${PLAZAS_CONVOCATORIA} convocados para repartir los equipos (hay ${convocatoria.titulares.length})`}
+            deshabilitado={convocatoria.titulares.length === 0}
+            motivo="Aún no hay ningún convocado que compartir."
           />
 
           {autenticado && (
