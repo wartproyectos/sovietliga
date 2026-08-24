@@ -49,18 +49,19 @@ export function Layout({ jornada }) {
 
   return (
     <div className="min-h-screen bg-[var(--sv-surface)] flex flex-col">
-      {/* Header */}
+      {/* Header — mástil tipográfico: la estrella vive DENTRO del wordmark
+          (LIGA ★ SOVIET), no como icono adjunto. Diferencia el logotipo del
+          rol de "cartel" que juegan los títulos de cada página. */}
       <header className="bg-[var(--sv-surface)] text-[var(--sv-on-surface)] border-b-4 border-[var(--sv-on-surface)]">
         <div className="max-w-3xl mx-auto px-5 py-5 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <IconoEstrella className="w-6 h-6 text-[var(--sv-primary)] shrink-0" />
-            <div className="min-w-0">
-              <h1 className="font-[Oswald] text-[26px] sm:text-[30px] leading-none font-bold text-[var(--sv-on-surface)] uppercase tracking-[0.02em]">
-                Liga Soviet
-              </h1>
-              <div className="mt-1.5 text-[var(--sv-primary)]">
-                <SelectorTemporada />
-              </div>
+          <div className="min-w-0">
+            <h1 className="font-[Oswald] text-[20px] sm:text-[24px] leading-none font-semibold text-[var(--sv-on-surface)] uppercase tracking-[0.16em] flex items-center gap-2 sm:gap-2.5 whitespace-nowrap">
+              <span>Liga</span>
+              <IconoEstrella className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px] text-[var(--sv-primary)] shrink-0" />
+              <span>Soviet</span>
+            </h1>
+            <div className="mt-2 text-[var(--sv-primary)]">
+              <SelectorTemporada />
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">

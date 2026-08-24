@@ -237,13 +237,11 @@ export function HistorialPage({ clasificacion, marcadores, loading, error, onCam
     <div className="flex flex-col gap-6 px-4">
       {/* Cabecera. */}
       <div>
-        <div className="flex items-center gap-3">
-          <IconoEstrella className="w-6 h-6 text-[var(--sv-primary)] shrink-0" />
-          <h2 className="text-[28px] sm:text-[32px] leading-[0.96] font-bold text-[var(--sv-on-surface)]">
-            Historial de<br />Jornadas
-          </h2>
-        </div>
+        <h2 className="text-[28px] sm:text-[32px] leading-[0.96] font-bold text-[var(--sv-on-surface)]">
+          Historial de<br />Jornadas
+        </h2>
         <p className="mt-3 font-[Oswald] text-xs font-semibold uppercase tracking-[0.09em] text-[var(--sv-on-surface-muted)]">
+          {seleccionada ? `Temporada ${seleccionada.nombre} · ` : ''}
           {totalJornadas} jornadas registradas
         </p>
       </div>

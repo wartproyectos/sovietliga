@@ -1,6 +1,6 @@
 import { Fragment, useState, useMemo } from 'react';
 import { PlayerModal } from './PlayerModal';
-import { IconoEstrella } from './IconoEstrella';
+import { useTemporada } from '../contexts/TemporadaContext';
 import { CHAMPION_JORNADA, MIN_PARTIDOS_CLASIFICACION } from '../constants';
 
 const SORT_ARROW = { asc: ' ▲', desc: ' ▼' };
@@ -33,6 +33,7 @@ export function ClasificacionTable({ clasificacion, jornada }) {
   // Orden inicial: %V de mayor a menor (la cabecera de "%V" usa sortKey="porcentaje")
   const [sort, setSort] = useState({ key: 'porcentaje', dir: 'desc' });
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const { seleccionada } = useTemporada();
 
   function toggleSort(key) {
     setSort((s) => {
@@ -89,12 +90,14 @@ export function ClasificacionTable({ clasificacion, jornada }) {
     <>
       <section className="sv-panel overflow-hidden">
         <div className="px-5 sm:px-7 pt-4 pb-6">
-          <div className="flex items-center gap-3">
-            <IconoEstrella className="w-6 h-6 text-[var(--sv-primary)] shrink-0" />
-            <h2 className="text-[32px] sm:text-[44px] leading-[0.96] font-bold text-[var(--sv-on-surface)]">
-              Clasificación<br />General
-            </h2>
-          </div>
+          <h2 className="text-[32px] sm:text-[44px] leading-[0.96] font-bold text-[var(--sv-on-surface)]">
+            Clasificación<br />General
+          </h2>
+          {seleccionada && (
+            <p className="mt-3 font-[Oswald] text-xs font-semibold uppercase tracking-[0.09em] text-[var(--sv-on-surface-muted)]">
+              Temporada {seleccionada.nombre}
+            </p>
+          )}
           <div className="mt-4 sv-accent-bar" />
         </div>
 

@@ -10,6 +10,7 @@ import { derivarEstadisticas, designarAlineador, generarConvocatoria } from '../
 import { balancearEquipos } from '../lib/equipos';
 import { construirMensajeWhatsapp } from '../lib/mensajeWhatsapp';
 import { BotonWhatsapp } from '../components/BotonWhatsapp';
+import { ComoFuncionaModal } from '../components/ComoFuncionaModal';
 import { posLabel } from '../data/posiciones';
 
 /** Fecha local a YYYY-MM-DD, evitando el desfase que introduce toISOString(). */
@@ -180,6 +181,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
 
   const [verDetalle, setVerDetalle] = useState(false);
   const [editorAbierto, setEditorAbierto] = useState(false);
+  const [comoFuncionaAbierto, setComoFuncionaAbierto] = useState(false);
 
   const loading = clasifLoading || dispLoading;
   const error = clasifError || dispError;
@@ -296,13 +298,27 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
     <div className="flex flex-col gap-6 px-4">
       {/* Cabecera. */}
       <div>
-        <div className="flex items-center gap-3">
-          <IconoEstrella className="w-6 h-6 text-[var(--sv-primary)] shrink-0" />
-          <h2 className="text-[32px] sm:text-[36px] leading-none font-bold text-[var(--sv-on-surface)]">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="min-w-0 text-[32px] sm:text-[36px] leading-none font-bold text-[var(--sv-on-surface)]">
             Convocatoria
           </h2>
+          <button
+            type="button"
+            onClick={() => setComoFuncionaAbierto(true)}
+            className="shrink-0 mt-1 inline-flex items-center gap-2 px-3 py-1.5 border-2 border-[var(--sv-on-surface)] font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--sv-on-surface)] hover:bg-[var(--sv-on-surface)] hover:text-[var(--sv-surface)] transition-colors"
+          >
+            <span
+              aria-hidden
+              className="w-4 h-4 border-2 border-current inline-flex items-center justify-center text-[10px] font-bold leading-none"
+            >
+              ?
+            </span>
+            <span className="hidden sm:inline">Cómo funciona</span>
+            <span className="sm:hidden">Ayuda</span>
+          </button>
         </div>
         <p className="mt-3 font-[Oswald] text-xs font-semibold uppercase tracking-[0.08em] text-[var(--sv-on-surface-muted)]">
+          {activa?.nombre ? `Temporada ${activa.nombre} · ` : ''}
           Jornada {jornada.numero} — {formatFecha(jornada.fecha)}
         </p>
       </div>
@@ -504,6 +520,11 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
           onGuardado={() => { setEditorAbierto(false); onCambio?.(); }}
         />
       )}
+
+      <ComoFuncionaModal
+        abierto={comoFuncionaAbierto}
+        onCerrar={() => setComoFuncionaAbierto(false)}
+      />
     </div>
   );
 }
