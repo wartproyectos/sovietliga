@@ -4,7 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/jpeg" href="/soviet-basket-logo.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#c41230" />
+    <!-- Debe coincidir con el fondo real de la página (--sv-surface): si no, el
+         navegador móvil pinta una barra de un color que no sale en la interfaz. -->
+    <meta name="theme-color" content="#f2ead9" />
+    <!-- Las fuentes se cargan aquí y no con @import desde el CSS: el @import
+         encadenaba CSS → CSS de fuentes → woff2 y retrasaba el primer pintado. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap"
+    />
     <meta
       name="description"
       content="Clasificación, historial de jornadas y generador de equipos de la Liga Soviet."

@@ -126,7 +126,10 @@ export function AdminPasswordModal({ onCerrar, onExito }) {
             )}
 
             {errMostrado && (
-              <p className="text-[12px] font-bold text-[var(--sv-primary)] uppercase tracking-[0.06em]">
+              <p
+                role="alert"
+                className="text-[12px] font-bold text-[var(--sv-primary)] uppercase tracking-[0.06em]"
+              >
                 {errMostrado}
               </p>
             )}

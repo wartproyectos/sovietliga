@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+// Verde de marca de WhatsApp. Es demasiado claro para texto blanco (1.98:1), así
+// que el botón en reposo lleva texto oscuro (9.26:1) y sólo el estado "copiado"
+// pasa al verde profundo con texto blanco (7.67:1).
 const VERDE = '#25D366';
+const VERDE_COPIADO = '#075E54';
 
 function IconoWhatsapp() {
   return (
@@ -56,14 +60,23 @@ export function BotonWhatsapp({ mensaje, deshabilitado, motivo }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={copiar}
-      style={{ backgroundColor: copiado ? '#128C7E' : VERDE }}
-      className="w-full py-4 font-[Oswald] font-bold text-[14px] text-white flex items-center justify-center gap-2 uppercase tracking-[0.1em] transition-colors hover:brightness-95"
-    >
-      {copiado ? '✓' : <IconoWhatsapp />}
-      {copiado ? 'Copiado al portapapeles' : 'Copiar para WhatsApp'}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={copiar}
+        style={{ backgroundColor: copiado ? VERDE_COPIADO : VERDE }}
+        className={`w-full py-4 font-[Oswald] font-bold text-[14px] flex items-center justify-center gap-2 uppercase tracking-[0.1em] transition-colors hover:brightness-95 ${
+          copiado ? 'text-white' : 'text-[var(--sv-on-surface)]'
+        }`}
+      >
+        {copiado ? <span aria-hidden>✓</span> : <IconoWhatsapp />}
+        {copiado ? 'Copiado al portapapeles' : 'Copiar para WhatsApp'}
+      </button>
+      {/* El cambio de texto del propio botón no lo anuncian todos los lectores;
+          esta región sí. Va fuera de flujo (sr-only es position:absolute). */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {copiado ? 'Convocatoria copiada al portapapeles' : ''}
+      </p>
+    </>
   );
 }

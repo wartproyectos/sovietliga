@@ -130,6 +130,8 @@ function JornadaCard({ jornada, marcador, isFirst, adminMode, onEditar }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={`jornada-${numero}-detalle`}
         className="w-full px-4 py-4 flex items-center justify-between gap-3 text-left hover:bg-[var(--sv-surface-low)] transition-colors"
       >
         <div className="min-w-0">
@@ -152,6 +154,7 @@ function JornadaCard({ jornada, marcador, isFirst, adminMode, onEditar }) {
             {totalJugadores} jugaron<br />{reservas.length} res.
           </span>
           <span
+            aria-hidden
             className={`text-[var(--sv-on-surface-muted)] transition-transform text-xs ${open ? 'rotate-180' : ''}`}
           >
             ▼
@@ -161,7 +164,10 @@ function JornadaCard({ jornada, marcador, isFirst, adminMode, onEditar }) {
 
       {/* Detalle expandible. */}
       {open && (
-        <div className="border-t-2 border-[var(--sv-on-surface)] px-4 py-4 flex flex-col gap-4">
+        <div
+          id={`jornada-${numero}-detalle`}
+          className="border-t-2 border-[var(--sv-on-surface)] px-4 py-4 flex flex-col gap-4"
+        >
           {ganadores.length > 0 && (
             <TeamSection
               label="Equipo ganador"
@@ -224,7 +230,7 @@ export function HistorialPage({ clasificacion, marcadores, loading, error, onCam
   const totalJornadas = historial.length > 0 ? historial[0].numero : 0;
 
   if (loading || error) {
-    return <PageState loading={loading} error={error} loadingMessage="Cargando historial..." />;
+    return <PageState loading={loading} error={error} loadingMessage="Cargando historial…" />;
   }
 
   return (

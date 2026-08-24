@@ -94,7 +94,7 @@ export function Layout({ jornada }) {
                   key={to}
                   aria-disabled="true"
                   title="Sólo disponible en la temporada activa"
-                  className={`${baseClass} text-[color:rgb(138_130_126/0.45)] cursor-not-allowed select-none`}
+                  className={`${baseClass} text-[#6b6461] cursor-not-allowed select-none`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{label}</span>

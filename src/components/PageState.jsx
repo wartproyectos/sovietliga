@@ -10,10 +10,10 @@ import { IconoEstrella } from './IconoEstrella';
  * (Ojo: `const x = <PageState ... />` siempre es truthy aunque el componente
  * devuelva null, porque un elemento JSX es un objeto.)
  */
-export function PageState({ loading, error, loadingMessage = 'Cargando datos...' }) {
+export function PageState({ loading, error, loadingMessage = 'Cargando datos…' }) {
   if (error) {
     return (
-      <div className="mx-4 border-2 border-[var(--sv-on-surface)] bg-white p-6">
+      <div role="alert" className="mx-4 border-2 border-[var(--sv-on-surface)] bg-white p-6">
         <p className="font-[Oswald] font-bold text-[var(--sv-primary)] mb-2 uppercase tracking-[0.09em]">
           No se pudieron cargar los datos
         </p>
@@ -27,7 +27,11 @@ export function PageState({ loading, error, loadingMessage = 'Cargando datos...'
 
   if (loading) {
     return (
-      <div className="mx-4 border-2 border-[var(--sv-on-surface)] bg-white p-8 text-left text-[var(--sv-on-surface-muted)] flex items-center gap-3">
+      <div
+        role="status"
+        aria-live="polite"
+        className="mx-4 border-2 border-[var(--sv-on-surface)] bg-white p-8 text-left text-[var(--sv-on-surface-muted)] flex items-center gap-3"
+      >
         <IconoEstrella className="w-6 h-6 text-[var(--sv-primary)] shrink-0" />
         <span className="font-[Oswald] uppercase tracking-[0.09em] text-sm font-semibold">
           {loadingMessage}

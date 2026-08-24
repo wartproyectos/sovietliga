@@ -85,7 +85,7 @@ export function EquiposPage({ clasificacion, loading, error }) {
   };
 
   if (loading || error) {
-    return <PageState loading={loading} error={error} loadingMessage="Cargando jugadores..." />;
+    return <PageState loading={loading} error={error} loadingMessage="Cargando jugadores…" />;
   }
 
   if (!clasificacion || clasificacion.length === 0) {
@@ -299,7 +299,9 @@ export function EquiposPage({ clasificacion, loading, error }) {
         <span className="text-lg text-[var(--sv-primary)]">★</span>
         <div>
           <h4 className="text-sm font-bold text-[var(--sv-on-surface)] leading-none mb-2 uppercase tracking-[0.08em]">Criterio de balanceo</h4>
-          <p className="text-xs text-[var(--sv-on-surface)] leading-relaxed uppercase tracking-[0.04em]">
+          {/* Sin `uppercase`: es un párrafo explicativo, y las mayúsculas
+              sostenidas cuestan de leer. Los titulares sí las conservan. */}
+          <p className="text-xs text-[var(--sv-on-surface)] leading-relaxed">
             Los equipos se optimizan para que encajen lo más posible en el esquema <b>1 jugador - 1 posición</b> usando la
             posición <b>principal</b> (y la <b>secundaria</b> como fallback), y además el balance de rendimiento por ranking (%V).
             El jugador de cambio también intenta ser de posiciones parecidas.

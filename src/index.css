@@ -1,11 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
+  /* La app es sólo clara. Declararlo evita que un SO en modo oscuro pinte los
+     <input type="number"> del editor y las barras de scroll con estilo oscuro. */
+  color-scheme: light;
+
   --sv-primary: #c41230;
   --sv-primary-strong: #c41230;
   --sv-primary-ink: #a20d24;
   --sv-primary-hover: #e63946;
+  /* Rojo aclarado para texto sobre fondo oscuro: #c41230 sobre --sv-on-surface
+     se queda en 3.04:1, insuficiente para los 11px de las cabeceras. */
+  --sv-primary-on-dark: #ec4a56;
 
   --sv-surface: #f2ead9;
   --sv-surface-low: #ece2cc;
@@ -166,4 +172,17 @@ h4,
 ::selection {
   background: var(--sv-primary);
   color: #fff;
+}
+
+/* Todo el movimiento de la interfaz es decorativo (hovers, chevrons que giran),
+   así que a quien pida menos movimiento se lo quitamos entero. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

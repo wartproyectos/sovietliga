@@ -246,7 +246,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   }, [equipos, convocatoria, alineador]);
 
   if (loading || error) {
-    return <PageState loading={loading} error={error} loadingMessage="Cargando convocatoria..." />;
+    return <PageState loading={loading} error={error} loadingMessage="Cargando convocatoria…" />;
   }
 
   if (!jornada || !ventana) {
@@ -432,19 +432,22 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
         <button
           type="button"
           onClick={() => setVerDetalle((v) => !v)}
+          aria-expanded={verDetalle}
+          aria-controls="detalle-respuestas"
           className="w-full bg-[var(--sv-on-surface)] px-4 py-3 flex items-center justify-between gap-3 text-left hover:brightness-110 transition"
         >
           <span className="font-[Oswald] text-[12px] font-bold uppercase tracking-[0.1em] text-[var(--sv-surface)]">
             Respuestas del formulario
           </span>
           <span
+            aria-hidden
             className={`text-[var(--sv-surface)] transition-transform text-sm ${verDetalle ? 'rotate-180' : ''}`}
           >
             ▼
           </span>
         </button>
         {verDetalle && grupos && (
-          <div className="bg-white border-2 border-t-0 border-[var(--sv-on-surface)]">
+          <div id="detalle-respuestas" className="bg-white border-2 border-t-0 border-[var(--sv-on-surface)]">
             <GrupoRespuestas
               titulo="Convocables"
               color="var(--sv-verde)"

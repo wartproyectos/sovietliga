@@ -8,12 +8,18 @@ const SORT_ARROW = { asc: ' ▲', desc: ' ▼' };
 function SortableHeader({ label, sortKey, sort, onSort, className = '' }) {
   const active = sort.key === sortKey;
   return (
-    <th className={`px-2 sm:px-3 py-3 ${className}`}>
+    <th
+      scope="col"
+      aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={`px-2 sm:px-3 py-3 ${className}`}
+    >
       <button
         type="button"
         onClick={() => onSort(sortKey)}
         className={`w-full flex items-center justify-center gap-0.5 text-[11px] uppercase tracking-[0.09em] font-[Oswald] font-bold transition-colors ${
-          active ? 'text-[var(--sv-primary)]' : 'text-[var(--sv-surface)] hover:text-[var(--sv-primary)]'
+          active
+            ? 'text-[var(--sv-primary-on-dark)]'
+            : 'text-[var(--sv-surface)] hover:text-[var(--sv-primary-on-dark)]'
         }`}
       >
         {label}
@@ -96,13 +102,21 @@ export function ClasificacionTable({ clasificacion, jornada }) {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-[var(--sv-on-surface)] text-[var(--sv-surface)]">
-                <th className="px-2 sm:px-4 py-3 w-10 text-center font-[Oswald] text-[11px] uppercase tracking-[0.08em]">#</th>
-                <th className="px-2 sm:px-4 py-3">
+                <th scope="col" className="px-2 sm:px-4 py-3 w-10 text-center font-[Oswald] text-[11px] uppercase tracking-[0.08em]">#</th>
+                <th
+                  scope="col"
+                  aria-sort={
+                    sort.key === 'nombre' ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'
+                  }
+                  className="px-2 sm:px-4 py-3"
+                >
                   <button
                     type="button"
                     onClick={() => toggleSort('nombre')}
                     className={`flex items-center gap-1 text-[11px] uppercase tracking-[0.09em] font-[Oswald] font-bold transition-colors ${
-                      sort.key === 'nombre' ? 'text-[var(--sv-primary)]' : 'text-[var(--sv-surface)] hover:text-[var(--sv-primary)]'
+                      sort.key === 'nombre'
+                        ? 'text-[var(--sv-primary-on-dark)]'
+                        : 'text-[var(--sv-surface)] hover:text-[var(--sv-primary-on-dark)]'
                     }`}
                   >
                     Jugador{sort.key === 'nombre' ? SORT_ARROW[sort.dir] : ''}
@@ -128,7 +142,7 @@ export function ClasificacionTable({ clasificacion, jornada }) {
                     </tr>
                   )}
                   <tr className={`${isChampion ? 'sv-champion' : rowBg} border-b sv-ghost-line transition-colors`}>
-                    <td className={`px-2 sm:px-4 py-3 sm:py-4 text-center font-[Oswald] font-bold text-xl sm:text-2xl ${isChampion ? 'text-[var(--sv-gold-strong)]' : 'text-[var(--sv-primary)]'}`}>
+                    <td className={`px-2 sm:px-4 py-3 sm:py-4 text-center font-[Oswald] font-bold text-xl sm:text-2xl tabular-nums ${isChampion ? 'text-[var(--sv-gold-strong)]' : 'text-[var(--sv-primary)]'}`}>
                       {isChampion ? '★' : String(row.pos).padStart(2, '0')}
                     </td>
                     <td className="px-2 sm:px-4 py-2">
@@ -143,10 +157,10 @@ export function ClasificacionTable({ clasificacion, jornada }) {
                         </span>
                       </button>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface)] text-[15px] sm:text-base font-[Oswald] font-bold">{row.pj}</td>
-                    <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface)] text-[15px] sm:text-base font-[Oswald] font-bold">{row.v}</td>
-                    <td className="px-2 sm:px-4 py-2 text-center font-[Oswald] font-bold text-[var(--sv-on-surface)] text-[15px] sm:text-base">{Math.round(Number(row.porcentaje ?? 0))}%</td>
-                    <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface-soft)] text-[13px] font-semibold">{row.reservas}</td>
+                    <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface)] text-[15px] sm:text-base font-[Oswald] font-bold tabular-nums">{row.pj}</td>
+                    <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface)] text-[15px] sm:text-base font-[Oswald] font-bold tabular-nums">{row.v}</td>
+                    <td className="px-2 sm:px-4 py-2 text-center font-[Oswald] font-bold text-[var(--sv-on-surface)] text-[15px] sm:text-base tabular-nums">{Math.round(Number(row.porcentaje ?? 0))}%</td>
+                    <td className="px-2 sm:px-4 py-2 text-center text-[var(--sv-on-surface-soft)] text-[13px] font-semibold tabular-nums">{row.reservas}</td>
                   </tr>
                 </Fragment>
                 );
