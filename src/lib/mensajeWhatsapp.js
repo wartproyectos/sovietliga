@@ -48,7 +48,7 @@ export function construirMensajeWhatsapp({
   if (alineador) partes.push('', `📋 Alineador: ${alineador}`);
 
   if (convocados) {
-    partes.push('', bloque('⚽ Convocados', convocados));
+    partes.push('', bloque('🏀 Convocados', convocados));
   } else {
     partes.push(
       '',

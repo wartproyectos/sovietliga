@@ -42,10 +42,10 @@ export function AvisoFormulario({ mostrarSiempre = false }) {
       <div className="relative bg-[var(--sv-on-surface)] pl-6 pr-5 py-4">
         <div className="absolute inset-y-0 left-0 w-2 bg-[var(--sv-primary)]" />
         <p className="font-[Oswald] text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--sv-primary)]">
-          ¡Camarada Soviet!
+          Camarada, hay Convocatoria abierta
         </p>
         <p className="mt-2 text-sm text-[color:rgb(242_234_217/0.95)] leading-snug">
-          Recuerda apuntarte cada jornada a través del formulario. Tienes hasta las{' '}
+          Apúntate a través del formulario. Tienes hasta las{' '}
           <b className="text-white">12:00 del domingo</b> antes del partido para dejar tu respuesta.
         </p>
       </div>

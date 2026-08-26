@@ -165,10 +165,7 @@ function TabsConvocatoria({ vista, onCambio, equiposDisponibles, totalConvocados
     { id: 'equipos', label: 'Equipos sugeridos', extra: null },
   ];
   return (
-    <div
-      role="tablist"
-      className="flex bg-[var(--sv-slate)] divide-x-2 divide-[color:rgb(255_255_255/0.12)]"
-    >
+    <div role="tablist" className="flex">
       {tabs.map((t) => {
         const activa = vista === t.id;
         const bloqueada = t.id === 'equipos' && !equiposDisponibles;
@@ -181,19 +178,19 @@ function TabsConvocatoria({ vista, onCambio, equiposDisponibles, totalConvocados
             disabled={bloqueada}
             onClick={() => !bloqueada && onCambio(t.id)}
             title={bloqueada ? 'Necesitas 12 convocados para repartir los equipos' : ''}
-            className={`flex-1 px-3 py-3 flex items-center justify-center gap-2 font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] transition-colors ${
+            className={`flex-1 px-3 py-3 flex items-center justify-center gap-2 font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] border-0 transition-colors ${
               activa
-                ? 'bg-[var(--sv-slate-strong)] text-white shadow-[inset_0_-3px_0_rgb(255_255_255/0.9)]'
+                ? 'bg-[var(--sv-primary)] text-white'
                 : bloqueada
-                  ? 'bg-[var(--sv-slate-soft)] text-white/40 cursor-not-allowed'
-                  : 'bg-[var(--sv-slate-soft)] text-white/85 hover:bg-[var(--sv-slate)] hover:text-white'
+                  ? 'bg-[var(--sv-surface)] text-[var(--sv-on-surface-muted)] cursor-not-allowed'
+                  : 'bg-[var(--sv-surface)] text-[var(--sv-on-surface)] hover:bg-[var(--sv-surface-low)]'
             }`}
           >
             <span>{t.label}</span>
             {t.extra && (
               <span
                 className={`font-[Oswald] text-[10px] font-bold tracking-[0.06em] ${
-                  activa ? 'text-white/80' : 'text-white/60'
+                  activa ? 'text-white/85' : 'text-[var(--sv-on-surface-muted)]'
                 }`}
               >
                 {t.extra}
