@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDisponibilidad } from '../hooks/useDisponibilidad';
 import { useTemporada } from '../contexts/TemporadaContext';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { useTesteo } from '../contexts/TesteoContext';
 import { PageState } from '../components/PageState';
 import { IconoEstrella } from '../components/IconoEstrella';
 import { EditorJornadaModal } from '../components/EditorJornadaModal';
@@ -246,55 +245,11 @@ function SubEquipo({
   );
 }
 
-/**
- * Interruptor sólo-admin para la restricción viernes→domingo.
- *
- * Cuando está desactivada, la convocatoria se puede abrir cualquier día y las
- * respuestas del formulario se leen sin filtrar por ventana. Sirve para probar
- * la funcionalidad sin esperar al fin de semana.
- */
-function ToggleModoPruebas({ siempreAbierta, onCambio }) {
-  return (
-    <div className="border-2 border-dashed border-[var(--sv-on-surface-muted)] bg-white px-4 py-3 flex items-center justify-between gap-3">
-      <div className="min-w-0">
-        <p className="font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--sv-on-surface)]">
-          Modo pruebas · admin
-        </p>
-        <p className="mt-1 text-[12px] text-[var(--sv-on-surface-muted)] leading-snug">
-          {siempreAbierta
-            ? 'Convocatoria abierta cualquier día. Se ignora la ventana viernes→domingo.'
-            : 'Restricción activa: sólo funciona entre viernes 00:00 y domingo 12:00.'}
-        </p>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={siempreAbierta}
-        onClick={() => onCambio(!siempreAbierta)}
-        title={siempreAbierta ? 'Reactivar la restricción viernes→domingo' : 'Dejar la convocatoria siempre abierta'}
-        className={`shrink-0 relative inline-flex h-7 w-12 items-center border-2 transition-colors ${
-          siempreAbierta
-            ? 'bg-[var(--sv-verde)] border-[var(--sv-verde)]'
-            : 'bg-[var(--sv-surface-low)] border-[var(--sv-on-surface-muted)]'
-        }`}
-      >
-        <span
-          aria-hidden
-          className={`inline-block h-5 w-5 bg-white transition-transform ${
-            siempreAbierta ? 'translate-x-[22px]' : 'translate-x-[2px]'
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
-
 // ------ Página ------------------------------------------------------------
 
 export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error: clasifError, ultimaJornada, onCambio }) {
   const { activa } = useTemporada();
   const { autenticado } = useAdminAuth();
-  const { siempreAbierta, setSiempreAbierta } = useTesteo();
   const {
     respuestas,
     invitados,
@@ -471,12 +426,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   const now = new Date();
   let estadoVentana;
   let estadoBg;
-  if (siempreAbierta) {
-    // Modo pruebas: la restricción viernes→domingo está desactivada, así que
-    // la ventana se muestra abierta pase lo que pase.
-    estadoVentana = 'Abierta';
-    estadoBg = 'bg-[var(--sv-verde)]';
-  } else if (now < ventana.inicio) {
+  if (now < ventana.inicio) {
     estadoVentana = 'Próximamente';
     estadoBg = 'bg-[var(--sv-on-surface-muted)]';
   } else if (now <= ventana.fin) {
@@ -560,13 +510,6 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
           {formatCorto(ventana.inicio)} — {formatCorto(ventana.fin)}
         </div>
       </div>
-
-      {autenticado && (
-        <ToggleModoPruebas
-          siempreAbierta={siempreAbierta}
-          onCambio={setSiempreAbierta}
-        />
-      )}
 
       {!hayRespuestas ? (
         <div className="bg-white border-2 border-dashed border-[var(--sv-on-surface-muted)] p-5 italic text-[13px] text-[var(--sv-on-surface-soft)]">

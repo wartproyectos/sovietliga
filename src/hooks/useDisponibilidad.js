@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { FORM_RESPONSES_SHEET_ID } from '../constants';
 import { useTemporada } from '../contexts/TemporadaContext';
-import { useTesteo } from '../contexts/TesteoContext';
 
 function parseCsv(text) {
   const rows = [];
@@ -85,7 +84,6 @@ function fechaInicioLocal(iso) {
 
 export function useDisponibilidad() {
   const { activa } = useTemporada();
-  const { siempreAbierta } = useTesteo();
   const [respuestas, setRespuestas] = useState(null);
   const [invitados, setInvitados] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,17 +116,18 @@ export function useDisponibilidad() {
           }))
           .filter((r) => r.timestamp && r.nombre && r.disponibilidad);
 
-        // En modo pruebas se ignora la ventana viernes→domingo y se aceptan
-        // todas las respuestas — así se puede generar convocatoria cualquier día
-        // de la semana. En modo normal sólo cuentan las que llegaron en ventana.
-        const relevantes = siempreAbierta
-          ? data
-          : data.filter((r) => r.timestamp >= ventana.inicio && r.timestamp <= ventana.fin);
+        const enVentana = data.filter(
+          (r) => r.timestamp >= ventana.inicio && r.timestamp <= ventana.fin,
+        );
 
+        // Si un jugador manda varias respuestas en la misma ventana (típico:
+        // se equivocó y volvió a enviar), sólo cuenta la de timestamp más
+        // reciente. Los invitados ("Otro") no se colapsan: cada uno es una
+        // persona distinta.
         const porJugador = new Map();
         const invitadosList = [];
 
-        for (const r of relevantes) {
+        for (const r of enVentana) {
           if (r.nombre === 'Otro') {
             invitadosList.push(r);
           } else {
@@ -150,7 +149,7 @@ export function useDisponibilidad() {
     }
 
     fetchData();
-  }, [ventana, siempreAbierta]);
+  }, [ventana]);
 
-  return { respuestas, invitados, loading, error, jornada, ventana, siempreAbierta };
+  return { respuestas, invitados, loading, error, jornada, ventana };
 }

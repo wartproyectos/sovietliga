@@ -19,9 +19,37 @@
       name="description"
       content="Clasificación, historial de jornadas y generador de equipos de la Liga Soviet."
     />
-    <!-- App privada del grupo — no queremos que salga en buscadores. -->
+    <!-- App privada del grupo — no queremos que salga en buscadores. Los
+         crawlers de OG (WhatsApp, Facebook, X, LinkedIn…) ignoran robots.txt y
+         estos meta, así que la vista previa al compartir el link sí funciona. -->
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
     <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+
+    <!-- Vista previa al compartir el link (Open Graph). URLs relativas: las
+         resuelven los crawlers contra el dominio de la página, así funciona
+         igual en preview y producción. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Liga Soviet" />
+    <meta property="og:title" content="Liga Soviet" />
+    <meta
+      property="og:description"
+      content="Clasificación, historial de jornadas y generador de equipos de la Liga Soviet."
+    />
+    <meta property="og:image" content="/soviet-basket-logo.jpg" />
+    <meta property="og:image:width" content="2304" />
+    <meta property="og:image:height" content="1792" />
+    <meta property="og:image:alt" content="Escudo de la Liga Soviet — balón de baloncesto con hoz y martillo" />
+
+    <!-- Twitter/X — 'summary' porque el logo es casi cuadrado; con
+         'summary_large_image' quedaría recortado en franja apaisada. -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Liga Soviet" />
+    <meta
+      name="twitter:description"
+      content="Clasificación, historial de jornadas y generador de equipos de la Liga Soviet."
+    />
+    <meta name="twitter:image" content="/soviet-basket-logo.jpg" />
+
     <title>Liga Soviet</title>
   </head>
   <body>

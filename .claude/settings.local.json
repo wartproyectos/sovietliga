@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(git -C /c/Repos/liga-soviet status)",
-      "Bash(npm ls *)"
+      "Bash(npm ls *)",
+      "Bash(ls C:/Users/BCNALV~1/AppData/Local/Temp/claude/ 2>/dev/null && ls C:/Repos/liga-soviet/public/)",
+      "Bash(find C:/Users/BCNALV~1/AppData/Local/Temp -type f -mmin -60 2>/dev/null | head -30)",
+      "Bash(find C:/Users/BCNALV~1/AppData/Roaming/Claude/Cache -type f -mmin -30 -size +500k 2>/dev/null | head -10)"
     ]
   }
 }

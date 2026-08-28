@@ -1,5 +1,6 @@
 import { Fragment, useState, useMemo } from 'react';
 import { PlayerModal } from './PlayerModal';
+import { PosterColapsable } from './PosterColapsable';
 import { useTemporada } from '../contexts/TemporadaContext';
 import { CHAMPION_JORNADA, MIN_PARTIDOS_CLASIFICACION } from '../constants';
 
@@ -100,6 +101,12 @@ export function ClasificacionTable({ clasificacion, jornada }) {
           )}
           <div className="mt-4 sv-accent-bar" />
         </div>
+
+        <PosterColapsable
+          src="/soviet-26-27-big.png"
+          alt="Equipo Basket Soviet 26/27 — К оружию, товарищи!"
+          storageKey="sv-poster-clasificacion-expandido"
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">

@@ -1,6 +1,5 @@
 import { FORMULARIO_URL } from '../constants';
 import { useTemporada } from '../contexts/TemporadaContext';
-import { useTesteo } from '../contexts/TesteoContext';
 import { getProximaJornada, getVentana } from '../hooks/useDisponibilidad';
 
 /**
@@ -24,13 +23,12 @@ function fechaInicioLocal(iso) {
  */
 export function AvisoFormulario({ mostrarSiempre = false }) {
   const { activa, esActivaSeleccionada } = useTemporada();
-  const { siempreAbierta } = useTesteo();
   if (!esActivaSeleccionada) return null;
 
   const inicio = fechaInicioLocal(activa?.fecha_inicio);
   if (!inicio) return null;
 
-  if (!mostrarSiempre && !siempreAbierta) {
+  if (!mostrarSiempre) {
     const jornada = getProximaJornada(inicio);
     const ventana = getVentana(jornada.fecha);
     const ahora = new Date();
