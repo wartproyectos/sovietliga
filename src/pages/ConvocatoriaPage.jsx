@@ -443,6 +443,15 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
       (grupos?.noConvocables.length ?? 0) >
     0;
 
+  // La convocatoria solo se publica desde el domingo 12:00 (cierre de la
+  // ventana de respuestas) hasta el martes 23:59:59 (día siguiente al partido).
+  // Fuera de esa franja se oculta para que los jugadores no reaccionen a un
+  // cálculo aún incompleto y provoquen conflictos.
+  const publicacionFin = new Date(jornada.fecha);
+  publicacionFin.setDate(publicacionFin.getDate() + 1);
+  publicacionFin.setHours(23, 59, 59, 999);
+  const convocatoriaPublicada = now >= ventana.fin && now <= publicacionFin;
+
   // El mensaje sigue a la vista activa: si estás mirando los equipos ya
   // repartidos, se comparte ese formato; si no, la lista plana de convocados.
   // Reservas y alineador se incluyen siempre.
@@ -515,6 +524,11 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
         <div className="bg-white border-2 border-dashed border-[var(--sv-on-surface-muted)] p-5 italic text-[13px] text-[var(--sv-on-surface-soft)]">
           Todavía no hay respuestas en esta ventana. La convocatoria se genera sola en cuanto
           empiecen a llegar.
+        </div>
+      ) : !convocatoriaPublicada ? (
+        <div className="bg-white border-2 border-dashed border-[var(--sv-on-surface-muted)] p-5 italic text-[13px] text-[var(--sv-on-surface-soft)]">
+          La convocatoria se publica el domingo a las 12:00, cuando cierra la ventana de
+          respuestas, y se mantiene visible hasta el martes por la noche.
         </div>
       ) : (
         <>
