@@ -5,7 +5,7 @@ import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { PageState } from '../components/PageState';
 import { IconoEstrella } from '../components/IconoEstrella';
 import { EditorJornadaModal } from '../components/EditorJornadaModal';
-import { PLAZAS_CONVOCATORIA } from '../constants';
+import { PLAZAS_CONVOCATORIA, NOMBRES_CONVOCABLES_POR_DEFECTO } from '../constants';
 import { derivarEstadisticas, designarAlineador, generarConvocatoria } from '../lib/convocatoria';
 import { balancearEquipos } from '../lib/equipos';
 import { construirMensajeWhatsapp } from '../lib/mensajeWhatsapp';
@@ -285,8 +285,18 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
       a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }),
     );
 
+    const esConvocablePorDefecto = (nombre) =>
+      NOMBRES_CONVOCABLES_POR_DEFECTO.some(
+        (n) => n.localeCompare(nombre ?? '', 'es', { sensitivity: 'base' }) === 0,
+      );
+
     for (const player of porNombre) {
-      const resp = respuestas.get(player.nombre);
+      // Si el jugador está en la lista de convocables por defecto y no ha
+      // respondido, sintetizamos una respuesta implícita "Convocable" para
+      // que la respuesta explícita — cuando llegue — siga mandando.
+      const resp =
+        respuestas.get(player.nombre) ??
+        (esConvocablePorDefecto(player.nombre) ? { disponibilidad: 'Convocable' } : null);
       const stats = derivarEstadisticas(player, ultimaJornada ?? 0);
 
       if (!resp) sinRespuesta.push(player.nombre);

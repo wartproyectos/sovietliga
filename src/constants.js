@@ -14,3 +14,9 @@ export const FORMULARIO_URL =
 
 // Jugadores que saltan a la pista cada jornada (6 por equipo).
 export const PLAZAS_CONVOCATORIA = 12;
+
+// Regla interna (no publicada en la UI): estos jugadores se consideran
+// convocables por defecto cuando no hay respuesta suya en el formulario.
+// Si contestan explícitamente "Reserva" o "No convocable", se respeta.
+// Comparación case-insensitive con acentos plegados.
+export const NOMBRES_CONVOCABLES_POR_DEFECTO = ['Ladrinskj'];
