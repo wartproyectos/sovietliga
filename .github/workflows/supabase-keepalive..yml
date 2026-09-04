@@ -1,0 +1,41 @@
+name: Supabase keepalive
+
+# El plan gratuito de Supabase pausa el proyecto tras 7 dias sin actividad.
+# Este workflow hace una lectura ligera contra la REST API dos veces por semana
+# (lunes y jueves), suficiente para que Supabase registre actividad y no pause.
+#
+# Requiere dos repository secrets en Settings > Secrets and variables > Actions:
+#   - SUPABASE_URL              Ej. https://xxxxxxxx.supabase.co
+#   - SUPABASE_PUBLISHABLE_KEY  La publishable key (sb_publishable_...) del proyecto.
+
+on:
+  schedule:
+    # Lun y Jue a las 12:00 UTC. Separacion de 3-4 dias, bien dentro del limite de 7.
+    - cron: '0 12 * * 1,4'
+  workflow_dispatch:  # Permite disparar manualmente desde la pestaña Actions.
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Faltan los secrets SUPABASE_URL y/o SUPABASE_PUBLISHABLE_KEY."
+            exit 1
+          fi
+
+      - name: Lectura ligera contra temporadas
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 \
+            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_PUBLISHABLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/temporadas?select=id&limit=1" \
+            > /dev/null
+          echo "Ping OK a $(date -u +%FT%TZ)"
