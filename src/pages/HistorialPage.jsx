@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { PageState } from '../components/PageState';
 import { IconoEstrella } from '../components/IconoEstrella';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { useTemporada } from '../contexts/TemporadaContext';
 import { EditorJornadaModal } from '../components/EditorJornadaModal';
+import { supabase } from '../lib/supabase';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -243,11 +244,41 @@ export function HistorialPage({ clasificacion, marcadores, loading, error, onCam
   const { seleccionada } = useTemporada();
   const [editando, setEditando] = useState(null); // número de jornada en edición
   const [creando, setCreando] = useState(false);
+  const [numeroMaxJornadaBd, setNumeroMaxJornadaBd] = useState(0);
 
   // Número de la última jornada jugada (historial está ordenado de más reciente
   // a más antigua, así que el primer elemento tiene el número más alto).
   const totalJornadas = historial.length > 0 ? historial[0].numero : 0;
-  const siguienteNumero = totalJornadas + 1;
+
+  // Antes de crear una jornada nueva, comprobamos si hay una fila en `jornadas`
+  // sin partido ni convocatoria — típicamente restos de un editor abierto y
+  // cerrado sin guardar, o creaciones canceladas. En ese caso reutilizamos ese
+  // número para rellenar la huérfana, en vez de saltarla y dejar basura.
+  //
+  // Solo se consulta con el admin autenticado — un espectador no necesita el
+  // dato ni gasta el round-trip. `clasificacion` cambia cuando el hook global
+  // se refresca tras guardar, así que revalida en ese momento.
+  useEffect(() => {
+    if (!autenticado || !seleccionada) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('jornadas')
+        .select('numero')
+        .eq('temporada_id', seleccionada.id)
+        .order('numero', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error && data) setNumeroMaxJornadaBd(data.numero);
+      else setNumeroMaxJornadaBd(0);
+    })();
+    return () => { cancelled = true; };
+  }, [autenticado, seleccionada, clasificacion]);
+
+  // Si `numeroMaxJornadaBd > totalJornadas`, hay una jornada creada en BD sin
+  // datos: la rellenamos en vez de sumar +1 y dejarla flotando.
+  const siguienteNumero = Math.max(numeroMaxJornadaBd, totalJornadas + 1);
 
   const abrirEditor = (numero, esNueva) => {
     setCreando(esNueva);
