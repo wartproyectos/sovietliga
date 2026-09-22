@@ -9,6 +9,24 @@ import { EditorJornadaModal } from '../components/EditorJornadaModal';
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** Fecha local a YYYY-MM-DD, evitando el desfase que introduce toISOString(). */
+function toIsoDay(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Lunes de la semana de `date` (la liga juega en lunes). */
+function lunesDe(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 /**
  * A partir del array de jugadores (cada uno con jornadaParticipacion y
  * jornadaVictorias), construye un array de jornadas con la información
@@ -224,10 +242,21 @@ export function HistorialPage({ clasificacion, marcadores, loading, error, onCam
   const { autenticado } = useAdminAuth();
   const { seleccionada } = useTemporada();
   const [editando, setEditando] = useState(null); // número de jornada en edición
+  const [creando, setCreando] = useState(false);
 
   // Número de la última jornada jugada (historial está ordenado de más reciente
   // a más antigua, así que el primer elemento tiene el número más alto).
   const totalJornadas = historial.length > 0 ? historial[0].numero : 0;
+  const siguienteNumero = totalJornadas + 1;
+
+  const abrirEditor = (numero, esNueva) => {
+    setCreando(esNueva);
+    setEditando(numero);
+  };
+  const cerrarEditor = () => {
+    setEditando(null);
+    setCreando(false);
+  };
 
   if (loading || error) {
     return <PageState loading={loading} error={error} loadingMessage="Cargando historial…" />;
@@ -246,6 +275,16 @@ export function HistorialPage({ clasificacion, marcadores, loading, error, onCam
         </p>
       </div>
 
+      {autenticado && (
+        <button
+          type="button"
+          onClick={() => abrirEditor(siguienteNumero, true)}
+          className="sv-cta w-full py-4 text-[14px]"
+        >
+          Añadir jornada {siguienteNumero}
+        </button>
+      )}
+
       {/* Lista de jornadas — bordes fundidos en una sola tira. */}
       {historial.length === 0 ? (
         <div className="bg-white border-2 border-[var(--sv-on-surface)] p-8 text-center text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em] font-[Oswald]">
@@ -260,7 +299,7 @@ export function HistorialPage({ clasificacion, marcadores, loading, error, onCam
               marcador={marcadores?.get(j.numero)}
               isFirst={i === 0}
               adminMode={autenticado}
-              onEditar={(n) => setEditando(n)}
+              onEditar={(n) => abrirEditor(n, false)}
             />
           ))}
         </div>
@@ -270,8 +309,10 @@ export function HistorialPage({ clasificacion, marcadores, loading, error, onCam
         <EditorJornadaModal
           jornadaNumero={editando}
           temporadaId={seleccionada.id}
-          onCerrar={() => setEditando(null)}
-          onGuardado={() => { setEditando(null); onCambio?.(); }}
+          modo={creando ? 'nueva' : 'editar'}
+          jornadaFechaIso={creando ? toIsoDay(lunesDe()) : undefined}
+          onCerrar={cerrarEditor}
+          onGuardado={() => { cerrarEditor(); onCambio?.(); }}
         />
       )}
     </div>

@@ -41,8 +41,26 @@ export async function cargarEdicion(temporadaId, jornadaNumero, jornadaFechaIso 
       })
       .select('id, numero, fecha, alineador_id')
       .single();
-    if (ins.error) throw new Error(`No se pudo crear la jornada: ${ins.error.message}`);
-    jornada = ins.data;
+    if (ins.error) {
+      // Bajo React StrictMode el useEffect que llama a cargarEdicion corre dos
+      // veces en paralelo en dev. Los dos selects ven que la jornada no existe
+      // y ambos intentan crearla; el primero gana y el segundo choca con la
+      // constraint (temporada_id, numero). Recuperamos la fila que acaba de
+      // aparecer en lugar de propagar el error.
+      const reSel = await supabase
+        .from('jornadas')
+        .select('id, numero, fecha, alineador_id')
+        .eq('temporada_id', temporadaId)
+        .eq('numero', jornadaNumero)
+        .maybeSingle();
+      if (reSel.data) {
+        jornada = reSel.data;
+      } else {
+        throw new Error(`No se pudo crear la jornada: ${ins.error.message}`);
+      }
+    } else {
+      jornada = ins.data;
+    }
   }
 
   const [pRes, cRes, jugRes] = await Promise.all([

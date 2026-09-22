@@ -30,6 +30,9 @@ const TEAM_LABEL = { a: 'Negro', b: 'Rojo' };
  * @param {Array<number>} [props.precarga.reservas]
  * @param {number|null} [props.precarga.alineadorId] — jugador_id del alineador
  *   designado por el algoritmo.
+ * @param {'editar'|'nueva'} [props.modo] — cambia el título. Por defecto
+ *   'editar' (historial existente). 'nueva' al registrar una jornada pasada
+ *   que aún no está en el historial.
  * @param {() => void} props.onCerrar
  * @param {() => void} props.onGuardado
  */
@@ -38,6 +41,7 @@ export function EditorJornadaModal({
   temporadaId,
   jornadaFechaIso,
   precarga,
+  modo = 'editar',
   onCerrar,
   onGuardado,
 }) {
@@ -298,7 +302,7 @@ export function EditorJornadaModal({
       className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={`Editar jornada ${jornadaNumero}`}
+      aria-label={modo === 'nueva' ? `Añadir jornada ${jornadaNumero}` : `Editar jornada ${jornadaNumero}`}
     >
       <button
         type="button"
@@ -315,7 +319,7 @@ export function EditorJornadaModal({
           <div className="flex items-center gap-2.5 min-w-0">
             <IconoEstrella className="w-5 h-5 text-[var(--sv-primary)] shrink-0" />
             <h3 className="font-[Oswald] text-xl font-bold uppercase tracking-[0.02em] text-[var(--sv-surface)] truncate">
-              Editar Jornada {jornadaNumero}
+              {modo === 'nueva' ? 'Nueva' : 'Editar'} Jornada {jornadaNumero}
             </h3>
           </div>
           <button
