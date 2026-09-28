@@ -113,6 +113,7 @@ function FilaJugador({
   arrastreProps = null,
   arrastrando = false,
   objetivoSoltar = false,
+  controles = null,
 }) {
   const fondo = tono === 'titular' ? 'bg-white' : 'bg-[var(--sv-surface-low)]';
   const efectos = arrastrando
@@ -125,7 +126,7 @@ function FilaJugador({
   return (
     <div
       {...(arrastreProps ?? {})}
-      className={`flex items-center gap-3 px-4 py-2.5 border-b sv-ghost-line last:border-b-0 transition-opacity select-none ${fondo} ${efectos}`}
+      className={`flex items-center gap-2 px-4 py-2.5 border-b sv-ghost-line last:border-b-0 transition-opacity select-none ${fondo} ${efectos}`}
     >
       <span className="font-[Oswald] text-sm font-bold text-[var(--sv-primary)] w-6 shrink-0 tabular-nums">
         {String(indice).padStart(2, '0')}
@@ -144,11 +145,142 @@ function FilaJugador({
           </span>
         ) : null}
       </span>
-      <span className="font-[Oswald] text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-[0.05em] shrink-0 text-right">
-        {jugador.reservas} res · {jugador.pj} pj
-        <br />
-        {jugador.jugoJornadaAnterior ? 'jugó la última' : 'no jugó la última'}
-      </span>
+      {controles ?? (
+        <span className="font-[Oswald] text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-[0.05em] shrink-0 text-right">
+          {jugador.reservas} res · {jugador.pj} pj
+          <br />
+          {jugador.jugoJornadaAnterior ? 'jugó la última' : 'no jugó la última'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Panel colapsable para añadir al reparto un habitual que quedó fuera. */
+function PanelAnadir({
+  abierto,
+  destino,
+  onDestino,
+  onAbrir,
+  onCerrar,
+  disponibles,
+  onElegir,
+}) {
+  return (
+    <div className="border-t-2 border-[var(--sv-on-surface)] bg-[var(--sv-surface-low)] p-3 flex flex-col gap-2">
+      {!abierto ? (
+        <button
+          type="button"
+          onClick={onAbrir}
+          className="w-full border-2 border-dashed border-[var(--sv-on-surface-muted)] py-2 text-[12px] font-bold uppercase tracking-[0.09em] font-[Oswald] text-[var(--sv-on-surface)] hover:bg-white transition-colors"
+        >
+          + Añadir jugador al reparto
+        </button>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em]">
+              <span className="text-[var(--sv-on-surface-muted)] font-[Oswald]">En:</span>
+              <div className="flex border-2 border-[var(--sv-on-surface)] overflow-hidden">
+                {['a', 'b', 'res'].map((eq) => {
+                  const activo = destino === eq;
+                  return (
+                    <button
+                      key={eq}
+                      type="button"
+                      onClick={() => onDestino(eq)}
+                      className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.06em] font-[Oswald] transition-colors ${
+                        activo
+                          ? eq === 'a'
+                            ? 'bg-[var(--sv-on-surface)] text-white'
+                            : eq === 'b'
+                              ? 'bg-[var(--sv-primary)] text-white'
+                              : 'bg-amber-500 text-white'
+                          : 'bg-white text-[var(--sv-on-surface)] hover:bg-[var(--sv-surface-low)]'
+                      }`}
+                      aria-pressed={activo}
+                    >
+                      {eq === 'a' ? 'Negro' : eq === 'b' ? 'Rojo' : 'Reserva'}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onCerrar}
+              className="text-[11px] uppercase tracking-[0.09em] text-[var(--sv-on-surface-muted)] hover:text-[var(--sv-on-surface)] font-[Oswald]"
+            >
+              Cerrar
+            </button>
+          </div>
+          <div className="max-h-56 overflow-y-auto border-2 border-[var(--sv-on-surface)] bg-white">
+            {disponibles.length === 0 ? (
+              <p className="p-3 text-xs italic text-[var(--sv-on-surface-muted)]">
+                No quedan jugadores fuera del reparto.
+              </p>
+            ) : (
+              disponibles.map((j) => (
+                <button
+                  key={j.id ?? j.nombre}
+                  type="button"
+                  onClick={() => onElegir(j)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-[13px] hover:bg-[var(--sv-surface-low)] transition-colors border-b sv-ghost-line last:border-b-0"
+                >
+                  <span className="font-bold uppercase truncate">{j.nombre}</span>
+                  <span className="text-[10px] uppercase text-[var(--sv-on-surface-muted)] font-[Oswald] tracking-[0.06em] shrink-0 tabular-nums">
+                    {j.pj ?? 0} pj · {Math.round(Number(j.porcentaje ?? 0))}% V
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Toggle N/R/Res + botón X para el modo admin del reparto. */
+function ControlesFila({ actual, onMover, onQuitar, nombre }) {
+  return (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex border-2 border-[var(--sv-on-surface)] overflow-hidden shrink-0">
+        {['a', 'b', 'res'].map((eq) => {
+          const activo = actual === eq;
+          return (
+            <button
+              key={eq}
+              type="button"
+              onClick={() => onMover(eq)}
+              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-[0.06em] font-[Oswald] transition-colors ${
+                activo
+                  ? eq === 'a'
+                    ? 'bg-[var(--sv-on-surface)] text-white'
+                    : eq === 'b'
+                      ? 'bg-[var(--sv-primary)] text-white'
+                      : 'bg-amber-500 text-white'
+                  : 'bg-white text-[var(--sv-on-surface)] hover:bg-[var(--sv-surface-low)]'
+              }`}
+              aria-pressed={activo}
+              aria-label={`Mover ${nombre} a ${eq === 'a' ? 'Equipo Negro' : eq === 'b' ? 'Equipo Rojo' : 'Reserva'}`}
+            >
+              {eq === 'a' ? 'N' : eq === 'b' ? 'R' : 'Res'}
+            </button>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={onQuitar}
+        aria-label={`Sacar a ${nombre} de la jornada`}
+        title="Sacar de la jornada"
+        className="w-7 h-7 flex items-center justify-center text-[var(--sv-on-surface-muted)] hover:text-[var(--sv-primary)] transition-colors"
+      >
+        <svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M4 4l12 12M16 4L4 16" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -217,6 +349,10 @@ function SubEquipo({
   construirArrastreProps = null,
   arrastrandoNombre = null,
   objetivoNombre = null,
+  equipoId,
+  admin = false,
+  onMover = null,
+  onQuitar = null,
 }) {
   const media = jugadores.reduce((s, p) => s + p.porcentaje, 0) / (jugadores.length || 1);
   return (
@@ -226,21 +362,37 @@ function SubEquipo({
           <span className="text-base">{emoji}</span> {titulo}
         </h4>
         <span className="font-[Oswald] text-[10px] font-bold tracking-[0.08em] tabular-nums">
-          Media {Math.round(media)}% V
+          Media {Math.round(media)}% V · {jugadores.length}
         </span>
       </div>
-      {jugadores.map((j, i) => (
-        <FilaJugador
-          key={j.nombre}
-          jugador={j}
-          indice={i + 1}
-          tono="titular"
-          esAlineador={alineador?.nombre === j.nombre}
-          arrastreProps={construirArrastreProps ? construirArrastreProps(j.nombre) : null}
-          arrastrando={arrastrandoNombre === j.nombre}
-          objetivoSoltar={objetivoNombre === j.nombre}
-        />
-      ))}
+      {jugadores.length === 0 ? (
+        <p className="px-4 py-3 text-xs italic text-[var(--sv-on-surface-muted)] bg-white">
+          Sin jugadores
+        </p>
+      ) : (
+        jugadores.map((j, i) => (
+          <FilaJugador
+            key={j.nombre}
+            jugador={j}
+            indice={i + 1}
+            tono="titular"
+            esAlineador={alineador?.nombre === j.nombre}
+            arrastreProps={construirArrastreProps ? construirArrastreProps(j.nombre) : null}
+            arrastrando={arrastrandoNombre === j.nombre}
+            objetivoSoltar={objetivoNombre === j.nombre}
+            controles={
+              admin && onMover && onQuitar ? (
+                <ControlesFila
+                  actual={equipoId}
+                  nombre={j.nombre}
+                  onMover={(dest) => onMover(j.nombre, dest)}
+                  onQuitar={() => onQuitar(j.nombre)}
+                />
+              ) : null
+            }
+          />
+        ))
+      )}
     </div>
   );
 }
@@ -263,11 +415,17 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   const [editorAbierto, setEditorAbierto] = useState(false);
   const [comoFuncionaAbierto, setComoFuncionaAbierto] = useState(false);
   const [vistaConvocatoria, setVistaConvocatoria] = useState('convocados'); // 'convocados' | 'equipos'
-  // Reajustes manuales del reparto: { [nombre]: 'a' | 'b' }. Sólo contiene las
-  // desviaciones respecto a lo que sugirió balancearEquipos.
+  // Reajustes manuales sobre el reparto y las reservas sugeridos.
+  // { [nombre]: 'a' | 'b' | 'res' | 'fuera' }
+  // 'fuera' saca al jugador del reparto por completo.
   const [equipoOverride, setEquipoOverride] = useState({});
+  // Jugadores añadidos manualmente que NO estaban en la convocatoria original.
+  // Cada uno lleva { nombre, id, porcentaje, ..., destino: 'a' | 'b' | 'res' }.
+  const [agregados, setAgregados] = useState([]);
   const [arrastrandoNombre, setArrastrandoNombre] = useState(null);
   const [objetivoNombre, setObjetivoNombre] = useState(null);
+  const [pickerAbierto, setPickerAbierto] = useState(false);
+  const [pickerDestino, setPickerDestino] = useState('a');
 
   const loading = clasifLoading || dispLoading;
   const error = clasifError || dispError;
@@ -340,46 +498,82 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   // reajustes manuales anteriores dejan de tener sentido, hay que descartarlos.
   useEffect(() => {
     setEquipoOverride({});
-  }, [equipos]);
+    setAgregados([]);
+  }, [equipos, convocatoria]);
 
   // Reparto final que se pinta y se comparte: la sugerencia del algoritmo con
-  // los intercambios manuales aplicados encima.
-  const equiposDisplay = useMemo(() => {
-    if (!equipos) return null;
-    if (Object.keys(equipoOverride).length === 0) return equipos;
+  // los intercambios manuales aplicados encima, más los jugadores añadidos.
+  const reparto = useMemo(() => {
     const equipo1 = [];
     const equipo2 = [];
-    for (const p of equipos.equipo1) {
-      ((equipoOverride[p.nombre] ?? 'a') === 'a' ? equipo1 : equipo2).push(p);
+    const reservas = [];
+
+    const put = (p, destino) => {
+      if (destino === 'a') equipo1.push(p);
+      else if (destino === 'b') equipo2.push(p);
+      else if (destino === 'res') reservas.push(p);
+      // 'fuera' → no se pinta
+    };
+
+    if (equipos) {
+      for (const p of equipos.equipo1) put(p, equipoOverride[p.nombre] ?? 'a');
+      for (const p of equipos.equipo2) put(p, equipoOverride[p.nombre] ?? 'b');
     }
-    for (const p of equipos.equipo2) {
-      ((equipoOverride[p.nombre] ?? 'b') === 'a' ? equipo1 : equipo2).push(p);
+    if (convocatoria) {
+      for (const p of convocatoria.reservas) put(p, equipoOverride[p.nombre] ?? 'res');
     }
-    return { equipo1, equipo2 };
-  }, [equipos, equipoOverride]);
+    for (const p of agregados) put(p, p.destino);
+
+    return { equipo1, equipo2, reservas };
+  }, [equipos, convocatoria, equipoOverride, agregados]);
+
+  // Vista "Equipos sugeridos": el memo unificado dividido en dos listas de
+  // titulares. Sigue existiendo aunque el reparto pierda o gane jugadores.
+  const equiposDisplay = useMemo(
+    () => (equipos ? { equipo1: reparto.equipo1, equipo2: reparto.equipo2 } : null),
+    [equipos, reparto],
+  );
 
   // Precarga para el editor de registro: usa el reparto tal y como está en
   // pantalla, con los intercambios manuales aplicados. Así, si el usuario
   // movió jugadores antes de "Registrar resultado", el editor se abre con la
   // misma composición que estaban mirando.
   const precargaEditor = useMemo(() => {
-    if (!equiposDisplay || !convocatoria) return null;
+    if (!convocatoria) return null;
     return {
       titulares: [
-        ...equiposDisplay.equipo1.map((p) => ({ jugador_id: p.id, equipo: 'a' })),
-        ...equiposDisplay.equipo2.map((p) => ({ jugador_id: p.id, equipo: 'b' })),
+        ...reparto.equipo1
+          .filter((p) => p.id != null)
+          .map((p) => ({ jugador_id: p.id, equipo: 'a' })),
+        ...reparto.equipo2
+          .filter((p) => p.id != null)
+          .map((p) => ({ jugador_id: p.id, equipo: 'b' })),
       ],
-      reservas: convocatoria.reservas.map((p) => p.id).filter((id) => id != null),
+      reservas: reparto.reservas.map((p) => p.id).filter((id) => id != null),
       alineadorId: alineador?.id ?? null,
     };
-  }, [equiposDisplay, convocatoria, alineador]);
+  }, [reparto, convocatoria, alineador]);
+
+  // Habituales que aún no están en el reparto — candidatos del picker "Añadir
+  // jugador". Ordenados alfabéticamente para escaneo rápido.
+  const disponiblesParaAnadir = useMemo(() => {
+    const usados = new Set([
+      ...reparto.equipo1.map((p) => p.nombre),
+      ...reparto.equipo2.map((p) => p.nombre),
+      ...reparto.reservas.map((p) => p.nombre),
+    ]);
+    return (clasificacion ?? [])
+      .filter((p) => !usados.has(p.nombre))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  }, [clasificacion, reparto]);
 
   // Qué equipo tiene ahora mismo un jugador — usado por los handlers de arrastre
-  // para saber si el drop cruza de equipo o no.
+  // para saber si el drop cruza de equipo o no. Cubre también los agregados.
   const equipoActualDe = (nombre) => {
-    if (equipoOverride[nombre]) return equipoOverride[nombre];
-    if (!equipos) return null;
-    return equipos.equipo1.some((p) => p.nombre === nombre) ? 'a' : 'b';
+    if (reparto.equipo1.some((p) => p.nombre === nombre)) return 'a';
+    if (reparto.equipo2.some((p) => p.nombre === nombre)) return 'b';
+    if (reparto.reservas.some((p) => p.nombre === nombre)) return 'res';
+    return null;
   };
 
   const intercambiar = (nombreA, nombreB) => {
@@ -387,7 +581,36 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
     const teamA = equipoActualDe(nombreA);
     const teamB = equipoActualDe(nombreB);
     if (!teamA || !teamB || teamA === teamB) return;
-    setEquipoOverride((prev) => ({ ...prev, [nombreA]: teamB, [nombreB]: teamA }));
+    if (teamA !== 'a' && teamA !== 'b') return;
+    if (teamB !== 'a' && teamB !== 'b') return;
+    moverJugador(nombreA, teamB);
+    moverJugador(nombreB, teamA);
+  };
+
+  // Mueve o expulsa a un jugador del reparto. Distingue si venía de la
+  // propuesta original (override) o de los agregados manuales.
+  const moverJugador = (nombre, destino) => {
+    const enAgregados = agregados.some((p) => p.nombre === nombre);
+    if (enAgregados) {
+      if (destino === 'fuera') {
+        setAgregados((prev) => prev.filter((p) => p.nombre !== nombre));
+      } else {
+        setAgregados((prev) =>
+          prev.map((p) => (p.nombre === nombre ? { ...p, destino } : p)),
+        );
+      }
+      return;
+    }
+    setEquipoOverride((prev) => ({ ...prev, [nombre]: destino }));
+  };
+
+  const quitarJugador = (nombre) => moverJugador(nombre, 'fuera');
+
+  const anadirDelPicker = (playerFull) => {
+    if (!playerFull) return;
+    const stats = derivarEstadisticas(playerFull, ultimaJornada ?? 0);
+    setAgregados((prev) => [...prev, { ...stats, destino: pickerDestino }]);
+    setPickerAbierto(false);
   };
 
   const construirArrastreProps = (nombre) => ({
@@ -474,13 +697,13 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
         alineador: alineador?.nombre ?? null,
         ...(enVistaEquipos
           ? {
-              equipoNegro: equiposDisplay.equipo1.map((p) => p.nombre),
-              equipoRojo: equiposDisplay.equipo2.map((p) => p.nombre),
+              equipoNegro: reparto.equipo1.map((p) => p.nombre),
+              equipoRojo: reparto.equipo2.map((p) => p.nombre),
             }
           : {
               convocados: convocatoria.titulares.map((p) => p.nombre),
             }),
-        reservas: convocatoria.reservas.map((p) => p.nombre),
+        reservas: reparto.reservas.map((p) => p.nombre),
       })
     : '';
 
@@ -581,9 +804,13 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
                   jugadores={equiposDisplay.equipo1}
                   alineador={alineador}
                   cabeceraBg="bg-[var(--sv-on-surface)] text-white"
-                  construirArrastreProps={construirArrastreProps}
+                  construirArrastreProps={autenticado ? null : construirArrastreProps}
                   arrastrandoNombre={arrastrandoNombre}
                   objetivoNombre={objetivoNombre}
+                  equipoId="a"
+                  admin={autenticado}
+                  onMover={moverJugador}
+                  onQuitar={quitarJugador}
                 />
                 <SubEquipo
                   titulo="Equipo Rojo"
@@ -591,10 +818,25 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
                   jugadores={equiposDisplay.equipo2}
                   alineador={alineador}
                   cabeceraBg="bg-[var(--sv-primary)] text-white"
-                  construirArrastreProps={construirArrastreProps}
+                  construirArrastreProps={autenticado ? null : construirArrastreProps}
                   arrastrandoNombre={arrastrandoNombre}
                   objetivoNombre={objetivoNombre}
+                  equipoId="b"
+                  admin={autenticado}
+                  onMover={moverJugador}
+                  onQuitar={quitarJugador}
                 />
+                {autenticado && (
+                  <PanelAnadir
+                    abierto={pickerAbierto}
+                    destino={pickerDestino}
+                    onDestino={setPickerDestino}
+                    onAbrir={() => setPickerAbierto(true)}
+                    onCerrar={() => setPickerAbierto(false)}
+                    disponibles={disponiblesParaAnadir}
+                    onElegir={anadirDelPicker}
+                  />
+                )}
               </>
             )}
           </section>
@@ -604,12 +846,27 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
             <div className="px-4 py-3 bg-amber-500 text-white flex items-center justify-between gap-3">
               <h3 className="font-[Oswald] text-sm font-bold uppercase tracking-[0.1em]">Reservas</h3>
               <span className="font-[Oswald] text-[11px] font-bold tracking-[0.08em]">
-                {convocatoria.reservas.length}
+                {reparto.reservas.length}
               </span>
             </div>
-            {convocatoria.reservas.length > 0 ? (
-              convocatoria.reservas.map((j, i) => (
-                <FilaJugador key={j.nombre} jugador={j} indice={i + 1} tono="reserva" />
+            {reparto.reservas.length > 0 ? (
+              reparto.reservas.map((j, i) => (
+                <FilaJugador
+                  key={j.nombre}
+                  jugador={j}
+                  indice={i + 1}
+                  tono="reserva"
+                  controles={
+                    autenticado && vistaConvocatoria === 'equipos' ? (
+                      <ControlesFila
+                        actual="res"
+                        nombre={j.nombre}
+                        onMover={(dest) => moverJugador(j.nombre, dest)}
+                        onQuitar={() => quitarJugador(j.nombre)}
+                      />
+                    ) : null
+                  }
+                />
               ))
             ) : (
               <p className="px-4 py-4 font-[Oswald] text-xs text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
