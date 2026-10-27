@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDisponibilidad } from '../hooks/useDisponibilidad';
 import { useTemporada } from '../contexts/TemporadaContext';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
@@ -9,6 +9,7 @@ import { PLAZAS_CONVOCATORIA, NOMBRES_CONVOCABLES_POR_DEFECTO } from '../constan
 import { derivarEstadisticas, designarAlineador, generarConvocatoria } from '../lib/convocatoria';
 import { balancearEquipos } from '../lib/equipos';
 import { construirMensajeWhatsapp } from '../lib/mensajeWhatsapp';
+import { cargarJornadaDelPartido, guardarConvocatoria } from '../lib/convocatoriaGuardada';
 import { BotonWhatsapp } from '../components/BotonWhatsapp';
 import { ComoFuncionaModal } from '../components/ComoFuncionaModal';
 
@@ -26,6 +27,62 @@ const formatFecha = (d) =>
 const formatCorto = (d) =>
   `${d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })} ` +
   d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+const porNombreEs = (a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+
+/** Ficha mínima para quien no está en la clasificación (invitados, sobre todo). */
+const fichaSinEstadisticas = (id, nombre, tipo) => ({
+  id,
+  nombre,
+  invitado: tipo === 'invitado',
+  reservas: 0,
+  pj: 0,
+  jugoJornadaAnterior: false,
+  ultimaReservaJornada: 0,
+  porcentaje: 0,
+  pos_principal: null,
+  pos_secundaria: null,
+});
+
+// ------ Borrador del modo edición -----------------------------------------
+//
+// { asignados: Map<jugador_id, 'a'|'b'|'res'>, nuevos: [{ clave, destino }] }
+//
+// Cada fila se identifica con una clave de texto: `j-<id>` para jugadores que
+// ya existen y `n-<clave>` para cada "Invitado" añadido, que aún no tiene
+// jugador asignado (se le da uno al guardar). Quitar a alguien lo borra del
+// borrador; sólo vuelve con "Añadir jugador".
+
+function destinoEnBorrador(borrador, clave) {
+  if (clave.startsWith('j-')) return borrador.asignados.get(Number(clave.slice(2))) ?? null;
+  return borrador.nuevos.find((n) => `n-${n.clave}` === clave)?.destino ?? null;
+}
+
+function conDestino(borrador, clave, destino) {
+  if (clave.startsWith('j-')) {
+    return { ...borrador, asignados: new Map(borrador.asignados).set(Number(clave.slice(2)), destino) };
+  }
+  return {
+    ...borrador,
+    nuevos: borrador.nuevos.map((n) => (`n-${n.clave}` === clave ? { ...n, destino } : n)),
+  };
+}
+
+function sinJugador(borrador, clave) {
+  if (clave.startsWith('j-')) {
+    const asignados = new Map(borrador.asignados);
+    asignados.delete(Number(clave.slice(2)));
+    return { ...borrador, asignados };
+  }
+  return { ...borrador, nuevos: borrador.nuevos.filter((n) => `n-${n.clave}` !== clave) };
+}
+
+// Rojo primero, igual que en el resto de la página.
+const DESTINOS = [
+  { id: 'b', corto: 'R', largo: 'Rojo', activo: 'bg-[var(--sv-primary)] text-white' },
+  { id: 'a', corto: 'N', largo: 'Negro', activo: 'bg-[var(--sv-on-surface)] text-white' },
+  { id: 'res', corto: 'Res', largo: 'Reserva', activo: 'bg-amber-500 text-white' },
+];
 
 // ------ Iconos de chip (20x20 con glifo blanco dentro) --------------------
 
@@ -113,6 +170,7 @@ function FilaJugador({
   arrastreProps = null,
   arrastrando = false,
   objetivoSoltar = false,
+  controles = null,
 }) {
   const fondo = tono === 'titular' ? 'bg-white' : 'bg-[var(--sv-surface-low)]';
   const efectos = arrastrando
@@ -144,11 +202,204 @@ function FilaJugador({
           </span>
         ) : null}
       </span>
-      <span className="font-[Oswald] text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-[0.05em] shrink-0 text-right">
-        {jugador.reservas} res · {jugador.pj} pj
-        <br />
-        {jugador.jugoJornadaAnterior ? 'jugó la última' : 'no jugó la última'}
-      </span>
+      {controles ??
+        (jugador.invitado ? (
+          <span className="font-[Oswald] text-[10px] text-amber-600 uppercase tracking-[0.1em] shrink-0">
+            Invitado
+          </span>
+        ) : (
+          <span className="font-[Oswald] text-[10px] text-[var(--sv-on-surface-muted)] uppercase tracking-[0.05em] shrink-0 text-right">
+            {jugador.reservas} res · {jugador.pj} pj
+            <br />
+            {jugador.jugoJornadaAnterior ? 'jugó la última' : 'no jugó la última'}
+          </span>
+        ))}
+    </div>
+  );
+}
+
+/** Selector Rojo / Negro / Reserva de una fila en modo edición, y la ✕ para quitarla. */
+function ControlesEdicion({ nombre, destino, onMover, onQuitar }) {
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <div className="flex border-2 border-[var(--sv-on-surface)]">
+        {DESTINOS.map((d) => {
+          const activo = destino === d.id;
+          return (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => !activo && onMover(d.id)}
+              aria-pressed={activo}
+              aria-label={`Mover a ${nombre} a ${d.largo}`}
+              title={d.largo}
+              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-[0.06em] font-[Oswald] transition-colors ${
+                activo ? d.activo : 'bg-white text-[var(--sv-on-surface)] hover:bg-[var(--sv-surface-low)]'
+              }`}
+            >
+              {d.corto}
+            </button>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={onQuitar}
+        aria-label={`Quitar a ${nombre} de la convocatoria`}
+        title="Quitar de la convocatoria"
+        className="w-8 h-8 flex items-center justify-center text-[var(--sv-on-surface-muted)] hover:text-[var(--sv-primary)] transition-colors"
+      >
+        <svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+          <path d="M4 4l12 12M16 4L4 16" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/** Un equipo (o las reservas) dentro del modo edición. */
+function SeccionEdicion({
+  titulo,
+  emoji,
+  cabeceraBg,
+  items,
+  alineadorId,
+  construirArrastreProps,
+  arrastrandoNombre,
+  objetivoNombre,
+  onMover,
+  onQuitar,
+}) {
+  return (
+    <div className="border-t-2 border-[var(--sv-on-surface)]">
+      <div className={`px-4 py-2.5 flex items-center justify-between gap-3 ${cabeceraBg}`}>
+        <h4 className="font-[Oswald] text-[13px] font-bold uppercase tracking-[0.1em] flex items-center gap-2">
+          {emoji && <span className="text-base">{emoji}</span>} {titulo}
+        </h4>
+        <span className="font-[Oswald] text-[11px] font-bold tracking-[0.08em] tabular-nums">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="px-4 py-3 bg-white font-[Oswald] text-xs text-[var(--sv-on-surface-muted)] uppercase tracking-[0.08em]">
+          Sin jugadores
+        </p>
+      ) : (
+        items.map((it, i) => (
+          <FilaJugador
+            key={it.clave}
+            jugador={it.ficha}
+            indice={i + 1}
+            tono={it.destino === 'res' ? 'reserva' : 'titular'}
+            esAlineador={it.ficha.id != null && it.ficha.id === alineadorId}
+            arrastreProps={construirArrastreProps(it.clave)}
+            arrastrando={arrastrandoNombre === it.clave}
+            objetivoSoltar={objetivoNombre === it.clave}
+            controles={
+              <ControlesEdicion
+                nombre={it.ficha.nombre}
+                destino={it.destino}
+                onMover={(d) => onMover(it.clave, d)}
+                onQuitar={() => onQuitar(it.clave)}
+              />
+            }
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
+/** Selector de destino (Rojo / Negro / Reserva) para quien se añade. */
+function SelectorDestino({ valor, onCambio }) {
+  return (
+    <div className="flex border-2 border-[var(--sv-on-surface)]">
+      {DESTINOS.map((d) => (
+        <button
+          key={d.id}
+          type="button"
+          onClick={() => onCambio(d.id)}
+          aria-pressed={valor === d.id}
+          className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.06em] font-[Oswald] transition-colors ${
+            valor === d.id ? d.activo : 'bg-white text-[var(--sv-on-surface)] hover:bg-[var(--sv-surface-low)]'
+          }`}
+        >
+          {d.largo}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * "Añadir jugador": los jugadores de la clasificación que no están en la
+ * convocatoria (incluidos los que se quitaron) y, arriba del todo, "Invitado",
+ * que se puede añadir tantas veces como haga falta.
+ */
+function AnadirJugador({ disponibles, destinoInicial, onAnadir, onAnadirInvitado }) {
+  const [abierto, setAbierto] = useState(false);
+  const [destino, setDestino] = useState(destinoInicial);
+
+  const abrir = () => {
+    setDestino(destinoInicial);
+    setAbierto(true);
+  };
+
+  const filaBase =
+    'w-full flex items-center justify-between gap-2 px-3 py-2.5 border-b sv-ghost-line last:border-b-0 text-left text-[13px] hover:bg-[var(--sv-surface-low)] transition-colors';
+
+  return (
+    <div className="border-t-2 border-[var(--sv-on-surface)] bg-[var(--sv-surface)] p-4 flex flex-col gap-3">
+      {!abierto ? (
+        <button
+          type="button"
+          onClick={abrir}
+          className="border-2 border-[var(--sv-on-surface)] py-2 text-[12px] font-bold uppercase tracking-[0.09em] font-[Oswald] hover:bg-[var(--sv-surface-low)]"
+        >
+          + Añadir jugador
+        </button>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <p className="font-[Oswald] text-[11px] font-bold uppercase tracking-[0.09em] text-[var(--sv-on-surface-muted)]">
+            Añadir jugador
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="font-[Oswald] text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--sv-on-surface-muted)]">
+              A:
+            </span>
+            <SelectorDestino valor={destino} onCambio={setDestino} />
+          </div>
+
+          <div className="max-h-56 overflow-y-auto border-2 border-[var(--sv-on-surface)] bg-white">
+            {/* Invitado no se agota: el selector sigue abierto para añadir varios. */}
+            <button type="button" onClick={() => onAnadirInvitado(destino)} className={filaBase}>
+              <span className="font-bold uppercase truncate text-amber-600">+ Invitado</span>
+              <span className="text-[10px] uppercase text-[var(--sv-on-surface-muted)] font-[Oswald] tracking-[0.06em] shrink-0">
+                se puede repetir
+              </span>
+            </button>
+            {disponibles.map((j) => (
+              <button
+                key={j.id}
+                type="button"
+                onClick={() => {
+                  onAnadir(j.id, destino);
+                  setAbierto(false);
+                }}
+                className={filaBase}
+              >
+                <span className="font-bold uppercase truncate">{j.nombre}</span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setAbierto(false)}
+            className="self-end font-[Oswald] text-[11px] uppercase tracking-[0.09em] text-[var(--sv-on-surface-muted)] hover:text-[var(--sv-on-surface)]"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -255,7 +506,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
     invitados,
     loading: dispLoading,
     error: dispError,
-    jornada,
+    proximoPartido,
     ventana,
   } = useDisponibilidad();
 
@@ -269,8 +520,59 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   const [arrastrandoNombre, setArrastrandoNombre] = useState(null);
   const [objetivoNombre, setObjetivoNombre] = useState(null);
 
-  const loading = clasifLoading || dispLoading;
+  // Lo que ya hay en BD para la fecha del partido: { numero, guardada }
+  // (ver cargarJornadaDelPartido). undefined = cargando.
+  const [enBd, setEnBd] = useState(undefined);
+  const [editando, setEditando] = useState(false);
+  const [borrador, setBorrador] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [errorEdicion, setErrorEdicion] = useState('');
+  const claveNuevoRef = useRef(0);
+
+  const temporadaId = activa?.id ?? null;
+  const fechaPartidoIso = proximoPartido ? toIsoDay(proximoPartido.fecha) : null;
+
+  useEffect(() => {
+    if (!temporadaId || !fechaPartidoIso) {
+      setEnBd({ numero: null, guardada: null });
+      return;
+    }
+    let cancelado = false;
+    cargarJornadaDelPartido(temporadaId, fechaPartidoIso)
+      .then((r) => !cancelado && setEnBd(r))
+      .catch((err) => {
+        // Si falla, la página sigue funcionando con la convocatoria calculada.
+        console.error(err);
+        if (!cancelado) setEnBd({ numero: null, guardada: null });
+      });
+    return () => { cancelado = true; };
+  }, [temporadaId, fechaPartidoIso]);
+
+  // Convocatoria guardada por el admin, o null (se calcula desde el formulario).
+  const guardada = enBd?.guardada ?? null;
+
+  // El número va por jornadas jugadas, no por calendario (hay semanas sin
+  // partido): el de BD si este partido ya existe, y si no, el siguiente a la
+  // última jugada — la que enseña el header.
+  const jornada = useMemo(() => {
+    if (!proximoPartido || enBd === undefined) return null;
+    return { fecha: proximoPartido.fecha, numero: enBd.numero ?? (ultimaJornada ?? 0) + 1 };
+  }, [proximoPartido, enBd, ultimaJornada]);
+  const jornadaNumero = jornada?.numero ?? null;
+
+  const loading = clasifLoading || dispLoading || enBd === undefined;
   const error = clasifError || dispError;
+
+  // Ficha de cada jugador por id: estadísticas de la clasificación si las
+  // tiene, y si no (invitados) una ficha vacía con su nombre.
+  const fichasPorId = useMemo(() => {
+    const m = new Map();
+    for (const f of guardada?.filas ?? []) {
+      m.set(f.jugador_id, fichaSinEstadisticas(f.jugador_id, f.nombre, f.tipo));
+    }
+    for (const p of clasificacion) m.set(p.id, derivarEstadisticas(p, ultimaJornada ?? 0));
+    return m;
+  }, [guardada, clasificacion, ultimaJornada]);
 
   const { grupos, convocatoria, equipos, alineador } = useMemo(() => {
     if (!clasificacion.length || !respuestas || !jornada)
@@ -305,6 +607,39 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
       else noConvocables.push(player.nombre);
     }
 
+    const grupos = {
+      convocables: convocables.map((p) => p.nombre),
+      voluntariosReserva: voluntariosReserva.map((p) => p.nombre),
+      noConvocables,
+      sinRespuesta,
+    };
+
+    // Con una convocatoria guardada manda lo guardado, tenga 12 o no.
+    if (guardada) {
+      const negro = [];
+      const rojo = [];
+      const reservas = [];
+      for (const f of guardada.filas) {
+        const ficha = fichasPorId.get(f.jugador_id) ?? fichaSinEstadisticas(f.jugador_id, f.nombre, f.tipo);
+        if (f.rol === 'reserva') reservas.push(ficha);
+        else if (f.equipo === 'b') rojo.push(ficha);
+        else negro.push(ficha);
+      }
+      const titulares = [...rojo, ...negro];
+      return {
+        grupos,
+        convocatoria: {
+          titulares,
+          reservas,
+          invitadosNecesarios: Math.max(0, PLAZAS_CONVOCATORIA - titulares.length),
+        },
+        equipos: { equipo1: negro, equipo2: rojo },
+        alineador:
+          titulares.find((p) => p.id === guardada.alineadorId) ??
+          designarAlineador(titulares, jornada.numero),
+      };
+    }
+
     const convocatoria = generarConvocatoria({
       convocables,
       voluntariosReserva,
@@ -313,19 +648,14 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
     });
 
     return {
-      grupos: {
-        convocables: convocables.map((p) => p.nombre),
-        voluntariosReserva: voluntariosReserva.map((p) => p.nombre),
-        noConvocables,
-        sinRespuesta,
-      },
+      grupos,
       convocatoria,
       // Devuelve null si no hay 12 exactos: sin plantilla completa no hay reparto.
       equipos: balancearEquipos(convocatoria.titulares),
       // Determinista por número de jornada — no cambia al refrescar.
       alineador: designarAlineador(convocatoria.titulares, jornada.numero),
     };
-  }, [clasificacion, respuestas, invitados, jornada, ultimaJornada]);
+  }, [clasificacion, respuestas, invitados, jornada, ultimaJornada, guardada, fichasPorId]);
 
   // Si la vista de equipos deja de estar disponible (por bajar de 12 titulares),
   // volvemos automáticamente a la de convocados para no dejar el toggle en un
@@ -390,11 +720,14 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
     setEquipoOverride((prev) => ({ ...prev, [nombreA]: teamB, [nombreB]: teamA }));
   };
 
-  const construirArrastreProps = (nombre) => ({
+  // Arrastrar una fila sobre otra de distinto grupo las intercambia. El mismo
+  // mecanismo sirve fuera de edición (entre equipos, por nombre) y dentro
+  // (entre equipos y reservas, por clave del borrador).
+  const crearArrastre = (grupoDe, intercambiarPar) => (clave) => ({
     draggable: true,
     onDragStart: (e) => {
-      setArrastrandoNombre(nombre);
-      e.dataTransfer.setData('text/plain', nombre);
+      setArrastrandoNombre(clave);
+      e.dataTransfer.setData('text/plain', clave);
       e.dataTransfer.effectAllowed = 'move';
     },
     onDragEnd: () => {
@@ -402,23 +735,141 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
       setObjetivoNombre(null);
     },
     onDragOver: (e) => {
-      if (!arrastrandoNombre || arrastrandoNombre === nombre) return;
-      if (equipoActualDe(arrastrandoNombre) === equipoActualDe(nombre)) return;
+      if (!arrastrandoNombre || arrastrandoNombre === clave) return;
+      if (grupoDe(arrastrandoNombre) === grupoDe(clave)) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      if (objetivoNombre !== nombre) setObjetivoNombre(nombre);
+      if (objetivoNombre !== clave) setObjetivoNombre(clave);
     },
     onDragLeave: () => {
-      if (objetivoNombre === nombre) setObjetivoNombre(null);
+      if (objetivoNombre === clave) setObjetivoNombre(null);
     },
     onDrop: (e) => {
       e.preventDefault();
       const origen = e.dataTransfer.getData('text/plain') || arrastrandoNombre;
-      intercambiar(origen, nombre);
+      intercambiarPar(origen, clave);
       setArrastrandoNombre(null);
       setObjetivoNombre(null);
     },
   });
+
+  const construirArrastreProps = crearArrastre(equipoActualDe, intercambiar);
+
+  // ------ Modo edición ("Editar combo") ------------------------------------
+
+  const empezarEdicion = () => {
+    const asignados = new Map();
+    if (equiposDisplay) {
+      for (const p of equiposDisplay.equipo2) asignados.set(p.id, 'b');
+      for (const p of equiposDisplay.equipo1) asignados.set(p.id, 'a');
+    } else {
+      // Sin reparto (no hay 12): se alternan para que el admin parta de algo.
+      convocatoria.titulares.forEach((p, i) => asignados.set(p.id, i % 2 === 0 ? 'b' : 'a'));
+    }
+    for (const p of convocatoria.reservas) asignados.set(p.id, 'res');
+    setBorrador({ asignados, nuevos: [] });
+    setErrorEdicion('');
+    setEditando(true);
+  };
+
+  const cancelarEdicion = () => {
+    setEditando(false);
+    setBorrador(null);
+    setErrorEdicion('');
+  };
+
+  const listasBorrador = useMemo(() => {
+    if (!borrador) return null;
+    const listas = { b: [], a: [], res: [] };
+    for (const [id, destino] of borrador.asignados) {
+      const ficha = fichasPorId.get(id);
+      if (ficha) listas[destino].push({ clave: `j-${id}`, destino, ficha });
+    }
+    for (const n of borrador.nuevos) {
+      listas[n.destino].push({
+        clave: `n-${n.clave}`,
+        destino: n.destino,
+        ficha: fichaSinEstadisticas(null, 'Invitado', 'invitado'),
+      });
+    }
+    return listas;
+  }, [borrador, fichasPorId]);
+
+  // Se mantiene el alineador mientras siga de titular; si se le quita o pasa a
+  // reserva, se designa otro entre los titulares que quedan.
+  const alineadorBorrador = useMemo(() => {
+    if (!listasBorrador) return null;
+    const titulares = [...listasBorrador.b, ...listasBorrador.a]
+      .map((it) => it.ficha)
+      .filter((f) => f.id != null);
+    return (
+      titulares.find((f) => f.id === alineador?.id) ??
+      designarAlineador(titulares, jornadaNumero ?? 0)
+    );
+  }, [listasBorrador, alineador, jornadaNumero]);
+
+  // Sólo los jugadores de la clasificación; los invitados entran como "Invitado".
+  const disponiblesParaAnadir = useMemo(() => {
+    if (!borrador) return [];
+    return clasificacion.filter((p) => !borrador.asignados.has(p.id)).sort(porNombreEs);
+  }, [clasificacion, borrador]);
+
+  const moverEnBorrador = (clave, destino) => setBorrador((b) => conDestino(b, clave, destino));
+  const quitarDeBorrador = (clave) => setBorrador((b) => sinJugador(b, clave));
+  const anadirABorrador = (id, destino) =>
+    setBorrador((b) => ({ ...b, asignados: new Map(b.asignados).set(id, destino) }));
+  const anadirInvitado = (destino) => {
+    claveNuevoRef.current += 1;
+    const clave = claveNuevoRef.current;
+    setBorrador((b) => ({ ...b, nuevos: [...b.nuevos, { clave, destino }] }));
+  };
+  const intercambiarEnBorrador = (claveA, claveB) =>
+    setBorrador((b) => {
+      const dA = destinoEnBorrador(b, claveA);
+      const dB = destinoEnBorrador(b, claveB);
+      if (!dA || !dB || dA === dB) return b;
+      return conDestino(conDestino(b, claveA, dB), claveB, dA);
+    });
+
+  const construirArrastreEdicion = crearArrastre(
+    (clave) => (borrador ? destinoEnBorrador(borrador, clave) : null),
+    intercambiarEnBorrador,
+  );
+
+  // El equipo con menos gente es el destino por defecto al añadir.
+  const destinoSugerido =
+    listasBorrador && listasBorrador.a.length < listasBorrador.b.length ? 'a' : 'b';
+
+  const guardarCombo = async () => {
+    if (!borrador || !activa || !jornada) return;
+    try {
+      setGuardando(true);
+      setErrorEdicion('');
+      const titulares = [];
+      const reservas = [];
+      for (const [id, destino] of borrador.asignados) {
+        if (destino === 'res') reservas.push(id);
+        else titulares.push({ jugador_id: id, equipo: destino });
+      }
+      await guardarConvocatoria({
+        temporadaId: activa.id,
+        jornadaNumero: jornada.numero,
+        jornadaFechaIso: toIsoDay(jornada.fecha),
+        titulares,
+        reservas,
+        invitadosNuevos: borrador.nuevos.map((n) => n.destino),
+        alineadorId: alineadorBorrador?.id ?? null,
+      });
+      setEnBd(await cargarJornadaDelPartido(activa.id, toIsoDay(jornada.fecha)));
+      setEditando(false);
+      setBorrador(null);
+      setVistaConvocatoria('equipos');
+    } catch (e) {
+      setErrorEdicion(e.message || 'No se pudo guardar la convocatoria');
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   if (loading || error) {
     return <PageState loading={loading} error={error} loadingMessage="Cargando convocatoria…" />;
@@ -448,6 +899,7 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
   }
 
   const hayRespuestas =
+    Boolean(guardada) ||
     (grupos?.convocables.length ?? 0) +
       (grupos?.voluntariosReserva.length ?? 0) +
       (grupos?.noConvocables.length ?? 0) >
@@ -540,8 +992,107 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
           La convocatoria se publica el domingo a las 12:00, cuando cierra la ventana de
           respuestas, y se mantiene visible hasta el martes por la noche.
         </div>
+      ) : editando && listasBorrador ? (
+        /* Modo edición: equipos y reservas con controles por fila, añadir
+           jugadores y Cancelar / Guardar. Nada se escribe hasta Guardar. */
+        <section className="border-2 border-[var(--sv-on-surface)]">
+          <div className="px-4 py-3 bg-[var(--sv-on-surface)] text-[var(--sv-surface)] flex items-center justify-between gap-3">
+            <h3 className="font-[Oswald] text-sm font-bold uppercase tracking-[0.1em]">Editando combo</h3>
+            <span className="font-[Oswald] text-[11px] font-bold tracking-[0.08em] tabular-nums">
+              {listasBorrador.b.length + listasBorrador.a.length}/{PLAZAS_CONVOCATORIA} titulares
+            </span>
+          </div>
+          <p className="px-4 py-2.5 bg-white text-[12px] text-[var(--sv-on-surface-soft)]">
+            Usa R / N / Res para mover a cada jugador, o arrástralo sobre otro para intercambiarlos.
+            La ✕ lo quita de la convocatoria.
+          </p>
+          <SeccionEdicion
+            titulo="Equipo Rojo"
+            emoji="🌹"
+            cabeceraBg="bg-[var(--sv-primary)] text-white"
+            items={listasBorrador.b}
+            alineadorId={alineadorBorrador?.id}
+            construirArrastreProps={construirArrastreEdicion}
+            arrastrandoNombre={arrastrandoNombre}
+            objetivoNombre={objetivoNombre}
+            onMover={moverEnBorrador}
+            onQuitar={quitarDeBorrador}
+          />
+          <SeccionEdicion
+            titulo="Equipo Negro"
+            emoji="🕷"
+            cabeceraBg="bg-[var(--sv-on-surface)] text-white"
+            items={listasBorrador.a}
+            alineadorId={alineadorBorrador?.id}
+            construirArrastreProps={construirArrastreEdicion}
+            arrastrandoNombre={arrastrandoNombre}
+            objetivoNombre={objetivoNombre}
+            onMover={moverEnBorrador}
+            onQuitar={quitarDeBorrador}
+          />
+          <SeccionEdicion
+            titulo="Reservas"
+            cabeceraBg="bg-amber-500 text-white"
+            items={listasBorrador.res}
+            alineadorId={null}
+            construirArrastreProps={construirArrastreEdicion}
+            arrastrandoNombre={arrastrandoNombre}
+            objetivoNombre={objetivoNombre}
+            onMover={moverEnBorrador}
+            onQuitar={quitarDeBorrador}
+          />
+          <AnadirJugador
+            disponibles={disponiblesParaAnadir}
+            destinoInicial={destinoSugerido}
+            onAnadir={anadirABorrador}
+            onAnadirInvitado={anadirInvitado}
+          />
+          {errorEdicion && (
+            <p
+              role="alert"
+              className="px-4 py-3 border-t-2 border-[var(--sv-on-surface)] bg-white text-[12px] font-bold text-[var(--sv-primary)] uppercase tracking-[0.06em]"
+            >
+              {errorEdicion}
+            </p>
+          )}
+          <div className="p-4 border-t-2 border-[var(--sv-on-surface)] bg-[var(--sv-surface)] flex gap-2">
+            <button
+              type="button"
+              onClick={cancelarEdicion}
+              disabled={guardando}
+              className="flex-1 border-2 border-[var(--sv-on-surface)] px-4 py-3 text-[13px] font-bold uppercase tracking-[0.09em] font-[Oswald] hover:bg-[var(--sv-surface-low)] disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={guardarCombo}
+              disabled={guardando}
+              className="sv-cta flex-1 text-[13px] py-3 disabled:opacity-60"
+            >
+              {guardando ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+        </section>
       ) : (
         <>
+          {(guardada || autenticado) && (
+            <div className="-mb-3 flex items-center justify-between gap-3">
+              <span className="font-[Oswald] text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--sv-on-surface-muted)]">
+                {guardada ? 'Combo ajustado por el admin' : ''}
+              </span>
+              {autenticado && (
+                <button
+                  type="button"
+                  onClick={empezarEdicion}
+                  className="shrink-0 px-3 py-1.5 border-2 border-[var(--sv-primary)] font-[Oswald] text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--sv-primary)] hover:bg-[var(--sv-primary)] hover:text-white transition-colors"
+                >
+                  Editar combo
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Convocatoria con dos vistas: lista plana de convocados, o el
               reparto sugerido en equipos. La pestaña de equipos se deshabilita
               cuando no hay 12 titulares exactos (no se puede repartir). */}

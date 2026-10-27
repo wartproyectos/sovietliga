@@ -7,7 +7,7 @@ import { IconoEstrella } from './IconoEstrella';
  *
  * - Marcador (puntos Negro / puntos Rojo)
  * - Composición de equipos (mover jugadores entre Negro/Rojo/Reserva o sacarlos)
- * - Añadir habituales o invitados nuevos a la jornada
+ * - Añadir habituales o "Invitado" (tantas veces como haga falta) a la jornada
  *
  * Se abre desde `HistorialPage`. Al guardar, escribe todos los cambios en
  * Supabase (ver `lib/jornadaEditor.js`) y avisa al padre con `onGuardado`.
@@ -24,8 +24,8 @@ const TEAM_LABEL = { a: 'Negro', b: 'Rojo' };
  * @param {string} [props.jornadaFechaIso] — YYYY-MM-DD; sólo se usa si hay
  *   que crear la jornada al vuelo (registro desde Convocatoria).
  * @param {object} [props.precarga] — reparto inicial que rellena el editor
- *   cuando la jornada aún no tiene datos en BD. Ignorado si la jornada ya
- *   tiene alineaciones o reservas guardadas.
+ *   cuando la jornada aún no tiene resultado en BD. Ignorado si la jornada ya
+ *   tiene alineaciones guardadas.
  * @param {Array<{jugador_id: number, equipo: 'a'|'b'}>} props.precarga.titulares
  * @param {Array<number>} [props.precarga.reservas]
  * @param {number|null} [props.precarga.alineadorId] — jugador_id del alineador
@@ -47,14 +47,13 @@ export function EditorJornadaModal({
 
   // Estado editable.
   const [asignados, setAsignados] = useState(new Map()); // jugadorId -> 'a'|'b'|'res'
-  const [invitadosNuevos, setInvitadosNuevos] = useState([]); // { tempKey, nombre, equipo }
+  // Cada "Invitado" añadido: { tempKey, nombre: 'Invitado', equipo }. Se le da
+  // un jugador invitado genérico al guardar.
+  const [invitadosNuevos, setInvitadosNuevos] = useState([]);
   const [puntosA, setPuntosA] = useState('');
   const [puntosB, setPuntosB] = useState('');
   const [alineadorId, setAlineadorId] = useState(undefined); // undefined = no tocar
 
-  const [nuevoInvitadoAbierto, setNuevoInvitadoAbierto] = useState(false);
-  const [nuevoInvitadoNombre, setNuevoInvitadoNombre] = useState('');
-  const [nuevoInvitadoEquipo, setNuevoInvitadoEquipo] = useState('a');
   const [pickerAbierto, setPickerAbierto] = useState(false);
   const [pickerEquipo, setPickerEquipo] = useState('a');
 
@@ -85,7 +84,10 @@ export function EditorJornadaModal({
         const snap = await cargarEdicion(temporadaId, jornadaNumero, jornadaFechaIso);
         if (cancelled) return;
 
-        const vacia = snap.alineaciones.length === 0 && snap.reservas.length === 0;
+        // Sin alineaciones todavía no se ha registrado nada: manda la precarga,
+        // aunque haya reservas en BD de una convocatoria guardada (la precarga
+        // ya refleja esa convocatoria).
+        const vacia = snap.alineaciones.length === 0;
 
         const m = new Map();
         if (vacia && precarga) {
@@ -195,10 +197,11 @@ export function EditorJornadaModal({
     return { negro, rojo, reserva };
   }, [asignados, invitadosNuevos, jugadoresPorId]);
 
+  // Sólo habituales (los de la clasificación); los invitados entran como "Invitado".
   const disponibles = useMemo(() => {
     const usados = new Set(asignados.keys());
     return (snapshot?.jugadores ?? [])
-      .filter((j) => !usados.has(j.id))
+      .filter((j) => j.tipo === 'habitual' && !usados.has(j.id))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
   }, [asignados, snapshot]);
 
@@ -235,16 +238,13 @@ export function EditorJornadaModal({
     setPickerAbierto(false);
   };
 
-  const anadirInvitadoNuevo = () => {
-    const nombre = nuevoInvitadoNombre.trim();
-    if (!nombre) return;
+  // El picker sigue abierto: "Invitado" se puede añadir varias veces seguidas.
+  const anadirInvitado = () => {
     tempKeyRef.current += 1;
     setInvitadosNuevos((prev) => [
       ...prev,
-      { tempKey: tempKeyRef.current, nombre, equipo: nuevoInvitadoEquipo },
+      { tempKey: tempKeyRef.current, nombre: 'Invitado', equipo: pickerEquipo },
     ]);
-    setNuevoInvitadoNombre('');
-    setNuevoInvitadoAbierto(false);
   };
 
   const parseNum = (s) => {
@@ -272,7 +272,7 @@ export function EditorJornadaModal({
       for (const [jid, eq] of asignados) {
         if (eq === 'res') reservas.push(jid);
       }
-      const invNuevos = invitadosNuevos.map((n) => ({ nombre: n.nombre, equipo: n.equipo }));
+      const invNuevos = invitadosNuevos.map((n) => n.equipo);
 
       await guardarEdicion({
         jornada: snapshot.jornada,
@@ -443,25 +443,26 @@ export function EditorJornadaModal({
                       <SegmentEquipo valor={pickerEquipo} onChange={setPickerEquipo} incluyeReserva />
                     </div>
                     <div className="max-h-40 overflow-y-auto border sv-ghost-line">
-                      {disponibles.length === 0 ? (
-                        <p className="p-3 text-xs italic text-[var(--sv-on-surface-muted)]">
-                          No quedan jugadores disponibles.
-                        </p>
-                      ) : (
-                        disponibles.map((j) => (
-                          <button
-                            key={j.id}
-                            type="button"
-                            onClick={() => anadirDelPicker(j.id)}
-                            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-[13px] hover:bg-[var(--sv-surface-low)] transition-colors"
-                          >
-                            <span className="font-bold uppercase truncate">{j.nombre}</span>
-                            <span className="text-[10px] uppercase text-[var(--sv-on-surface-muted)] font-[Oswald] tracking-[0.06em] shrink-0">
-                              {j.tipo === 'invitado' ? 'invitado' : 'habitual'}
-                            </span>
-                          </button>
-                        ))
-                      )}
+                      <button
+                        type="button"
+                        onClick={anadirInvitado}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-[13px] hover:bg-[var(--sv-surface-low)] transition-colors"
+                      >
+                        <span className="font-bold uppercase truncate text-amber-600">+ Invitado</span>
+                        <span className="text-[10px] uppercase text-[var(--sv-on-surface-muted)] font-[Oswald] tracking-[0.06em] shrink-0">
+                          se puede repetir
+                        </span>
+                      </button>
+                      {disponibles.map((j) => (
+                        <button
+                          key={j.id}
+                          type="button"
+                          onClick={() => anadirDelPicker(j.id)}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-[13px] hover:bg-[var(--sv-surface-low)] transition-colors"
+                        >
+                          <span className="font-bold uppercase truncate">{j.nombre}</span>
+                        </button>
+                      ))}
                     </div>
                     <button
                       type="button"
@@ -471,60 +472,14 @@ export function EditorJornadaModal({
                       Cerrar picker
                     </button>
                   </div>
-                ) : nuevoInvitadoAbierto ? (
-                  <div className="flex flex-col gap-2">
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[10px] uppercase tracking-[0.09em] font-bold text-[var(--sv-on-surface-muted)] font-[Oswald]">
-                        Nombre del invitado
-                      </span>
-                      <input
-                        type="text"
-                        value={nuevoInvitadoNombre}
-                        onChange={(e) => setNuevoInvitadoNombre(e.target.value)}
-                        placeholder="Ej: Amigo de Adri"
-                        className="border-2 border-[var(--sv-on-surface)] bg-white px-3 py-2 text-sm focus:outline-none focus:border-[var(--sv-primary)]"
-                        autoFocus
-                      />
-                    </label>
-                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em]">
-                      <span className="text-[var(--sv-on-surface-muted)] font-[Oswald]">En:</span>
-                      <SegmentEquipo valor={nuevoInvitadoEquipo} onChange={setNuevoInvitadoEquipo} incluyeReserva />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => { setNuevoInvitadoAbierto(false); setNuevoInvitadoNombre(''); }}
-                        className="flex-1 border-2 border-[var(--sv-on-surface)] px-3 py-2 text-[12px] font-bold uppercase tracking-[0.09em] font-[Oswald] hover:bg-[var(--sv-surface-low)]"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={anadirInvitadoNuevo}
-                        disabled={!nuevoInvitadoNombre.trim()}
-                        className="sv-cta flex-1 text-[12px] py-2 disabled:opacity-60"
-                      >
-                        Añadir
-                      </button>
-                    </div>
-                  </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPickerAbierto(true)}
-                      className="border-2 border-[var(--sv-on-surface)] py-2 text-[12px] font-bold uppercase tracking-[0.09em] font-[Oswald] hover:bg-[var(--sv-surface-low)]"
-                    >
-                      Del listado
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNuevoInvitadoAbierto(true)}
-                      className="border-2 border-[var(--sv-primary)] text-[var(--sv-primary)] py-2 text-[12px] font-bold uppercase tracking-[0.09em] font-[Oswald] hover:bg-[var(--sv-primary)] hover:text-white transition-colors"
-                    >
-                      + Invitado nuevo
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPickerAbierto(true)}
+                    className="border-2 border-[var(--sv-on-surface)] py-2 text-[12px] font-bold uppercase tracking-[0.09em] font-[Oswald] hover:bg-[var(--sv-surface-low)]"
+                  >
+                    + Añadir jugador
+                  </button>
                 )}
               </section>
 
@@ -592,7 +547,7 @@ function FilaEditor({ item, equipoActual, onCambiar, onQuitar }) {
         {item.nombre}
         {item.tipo === 'invitado' && (
           <span className="ml-2 text-[9px] font-normal normal-case text-amber-600 uppercase tracking-[0.1em] font-[Oswald]">
-            invitado{item.esNuevo ? ' (nuevo)' : ''}
+            {item.esNuevo ? 'nuevo' : 'invitado'}
           </span>
         )}
       </span>

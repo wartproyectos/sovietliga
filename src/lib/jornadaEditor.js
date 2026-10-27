@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { reservarInvitados } from './invitados.js';
 
 /**
  * Carga todo lo necesario para editar una jornada.
@@ -90,9 +91,8 @@ export async function cargarEdicion(temporadaId, jornadaNumero, jornadaFechaIso 
  * @param {number|null} params.puntosB
  * @param {Array<{ jugador_id: number, equipo: 'a'|'b' }>} params.titulares
  * @param {Array<number>} params.reservas — jugador_ids en reserva
- * @param {Array<string>} params.invitadosNuevos — nombres a crear como
- *     jugadores tipo 'invitado' y añadir como titulares. Cada uno espera un
- *     objeto `{ nombre, equipo }` para saber a qué equipo va.
+ * @param {Array<'a'|'b'|'res'>} params.invitadosNuevos — destino de cada
+ *     "Invitado" añadido; se le asigna un jugador invitado genérico.
  * @param {number|undefined} params.alineadorId — jugador_id designado como
  *     alineador. `undefined` = no tocar el valor actual (útil al editar una
  *     jornada antigua desde Historial). `null` = borrarlo explícitamente.
@@ -109,18 +109,15 @@ export async function guardarEdicion({
   invitadosNuevos,
   alineadorId,
 }) {
-  // 1) Crear invitados nuevos y añadirlos a titulares con jugador_id ya real.
+  // 1) Dar a cada "Invitado" añadido su jugador invitado genérico.
   const titularesResueltos = [...titulares];
-  for (const nuevo of invitadosNuevos) {
-    if (!nuevo.nombre?.trim()) continue;
-    const ins = await supabase
-      .from('jugadores')
-      .insert({ nombre: nuevo.nombre.trim(), tipo: 'invitado' })
-      .select('id')
-      .single();
-    if (ins.error) throw new Error(`No se pudo crear el invitado ${nuevo.nombre}: ${ins.error.message}`);
-    titularesResueltos.push({ jugador_id: ins.data.id, equipo: nuevo.equipo });
-  }
+  const reservasResueltas = [...reservas];
+  const ocupados = new Set([...titulares.map((t) => t.jugador_id), ...reservas]);
+  const idsInvitados = await reservarInvitados(invitadosNuevos.length, ocupados);
+  invitadosNuevos.forEach((equipo, i) => {
+    if (equipo === 'res') reservasResueltas.push(idsInvitados[i]);
+    else titularesResueltos.push({ jugador_id: idsInvitados[i], equipo });
+  });
 
   // 2) Calcular resultado consistente con el marcador.
   const marcadorSet = puntosA != null && puntosB != null;
@@ -187,7 +184,7 @@ export async function guardarEdicion({
       jugador_id: t.jugador_id,
       rol: 'titular',
     })),
-    ...reservas.map((jid) => ({
+    ...reservasResueltas.map((jid) => ({
       jornada_id: jornada.id,
       jugador_id: jid,
       rol: 'reserva',
@@ -201,11 +198,10 @@ export async function guardarEdicion({
   // 6) Alineador. Solo se guarda si el llamante lo pasa; el editor desde
   //    Historial (jornadas antiguas) puede no tenerlo y no queremos borrar el
   //    valor existente por accidente — por eso undefined ≠ null aquí.
-  if (alineadorId !== undefined) {
-    const updJ = await supabase
-      .from('jornadas')
-      .update({ alineador_id: alineadorId, estado: 'jugada' })
-      .eq('id', jornada.id);
-    if (updJ.error) throw new Error(`No se pudo guardar el alineador: ${updJ.error.message}`);
-  }
+  //    El estado pasa a 'jugada' siempre: si venía de una convocatoria
+  //    guardada ('convocada'), es lo que hace que sus reservas empiecen a contar.
+  const updJornada = { estado: 'jugada' };
+  if (alineadorId !== undefined) updJornada.alineador_id = alineadorId;
+  const updJ = await supabase.from('jornadas').update(updJornada).eq('id', jornada.id);
+  if (updJ.error) throw new Error(`No se pudo actualizar la jornada: ${updJ.error.message}`);
 }

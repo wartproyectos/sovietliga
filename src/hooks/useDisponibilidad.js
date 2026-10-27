@@ -35,8 +35,10 @@ function parseTimestamp(str) {
 }
 
 /**
- * Fecha del próximo partido y su número dentro de la temporada.
- * `inicio` es un `Date` con el lunes de la jornada 1.
+ * Fecha del próximo partido. `inicio` es un `Date` con el lunes de la jornada 1.
+ *
+ * No devuelve número de jornada: hay semanas sin partido, así que el número
+ * sale de las jornadas jugadas (ver ConvocatoriaPage), no del calendario.
  *
  * Se cuenta en días de calendario, no en milisegundos: con el cambio de hora
  * una semana no mide 7×24 h y la fecha caía en domingo a las 23:00.
@@ -45,22 +47,21 @@ export function getProximaJornada(inicio) {
   const now = new Date();
 
   if (now < inicio) {
-    return { numero: 1, fecha: new Date(inicio) };
+    return { fecha: new Date(inicio) };
   }
 
   const masDias = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const hoy = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   // round absorbe la hora de más o de menos del cambio de horario.
   const dias = Math.round((hoy - inicio) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.floor(dias / 7);
-  const thisMonday = masDias(inicio, weekNumber * 7);
+  const thisMonday = masDias(inicio, Math.floor(dias / 7) * 7);
 
   // Si ya pasó el martes, la siguiente jornada es la de la semana que viene.
   if (now >= masDias(thisMonday, 1)) {
-    return { numero: weekNumber + 2, fecha: masDias(thisMonday, 7) };
+    return { fecha: masDias(thisMonday, 7) };
   }
 
-  return { numero: weekNumber + 1, fecha: thisMonday };
+  return { fecha: thisMonday };
 }
 
 export function getVentana(fechaPartido) {
@@ -94,11 +95,11 @@ export function useDisponibilidad() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const { jornada, ventana } = useMemo(() => {
+  const { proximoPartido, ventana } = useMemo(() => {
     const inicio = fechaInicioLocal(activa?.fecha_inicio);
-    if (!inicio) return { jornada: null, ventana: null };
-    const j = getProximaJornada(inicio);
-    return { jornada: j, ventana: getVentana(j.fecha) };
+    if (!inicio) return { proximoPartido: null, ventana: null };
+    const p = getProximaJornada(inicio);
+    return { proximoPartido: p, ventana: getVentana(p.fecha) };
   }, [activa]);
 
   useEffect(() => {
@@ -156,5 +157,5 @@ export function useDisponibilidad() {
     fetchData();
   }, [ventana]);
 
-  return { respuestas, invitados, loading, error, jornada, ventana };
+  return { respuestas, invitados, loading, error, proximoPartido, ventana };
 }
