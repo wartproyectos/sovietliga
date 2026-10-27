@@ -140,9 +140,9 @@ function JornadaCard({ jornada, marcador, isFirst, adminMode, onEditar }) {
           </p>
           {marcador ? (
             <p className="mt-1.5 font-[Oswald] text-[15px] font-bold tabular-nums text-[var(--sv-on-surface)] leading-none">
-              <span className="text-[var(--sv-on-surface)]">Negro {marcador.puntos_a}</span>
-              <span className="mx-1.5 text-[var(--sv-on-surface-muted)]">–</span>
               <span className="text-[var(--sv-primary)]">Rojo {marcador.puntos_b}</span>
+              <span className="mx-1.5 text-[var(--sv-on-surface-muted)]">–</span>
+              <span className="text-[var(--sv-on-surface)]">Negro {marcador.puntos_a}</span>
             </p>
           ) : null}
           <p className="mt-1.5 text-[12px] font-bold text-[var(--sv-primary)] truncate">

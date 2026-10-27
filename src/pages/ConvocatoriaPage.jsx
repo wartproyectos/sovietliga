@@ -576,21 +576,21 @@ export function ConvocatoriaPage({ clasificacion, loading: clasifLoading, error:
             ) : (
               <>
                 <SubEquipo
-                  titulo="Equipo Negro"
-                  emoji="🕷"
-                  jugadores={equiposDisplay.equipo1}
-                  alineador={alineador}
-                  cabeceraBg="bg-[var(--sv-on-surface)] text-white"
-                  construirArrastreProps={construirArrastreProps}
-                  arrastrandoNombre={arrastrandoNombre}
-                  objetivoNombre={objetivoNombre}
-                />
-                <SubEquipo
                   titulo="Equipo Rojo"
                   emoji="🌹"
                   jugadores={equiposDisplay.equipo2}
                   alineador={alineador}
                   cabeceraBg="bg-[var(--sv-primary)] text-white"
+                  construirArrastreProps={construirArrastreProps}
+                  arrastrandoNombre={arrastrandoNombre}
+                  objetivoNombre={objetivoNombre}
+                />
+                <SubEquipo
+                  titulo="Equipo Negro"
+                  emoji="🕷"
+                  jugadores={equiposDisplay.equipo1}
+                  alineador={alineador}
+                  cabeceraBg="bg-[var(--sv-on-surface)] text-white"
                   construirArrastreProps={construirArrastreProps}
                   arrastrandoNombre={arrastrandoNombre}
                   objetivoNombre={objetivoNombre}

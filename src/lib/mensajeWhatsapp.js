@@ -52,9 +52,9 @@ export function construirMensajeWhatsapp({
   } else {
     partes.push(
       '',
-      bloque('🕷Equipo Negro', equipoNegro),
-      '',
       bloque('🌹Equipo Rojo', equipoRojo),
+      '',
+      bloque('🕷Equipo Negro', equipoNegro),
     );
   }
 
