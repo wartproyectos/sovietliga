@@ -37,6 +37,9 @@ function parseTimestamp(str) {
 /**
  * Fecha del próximo partido y su número dentro de la temporada.
  * `inicio` es un `Date` con el lunes de la jornada 1.
+ *
+ * Se cuenta en días de calendario, no en milisegundos: con el cambio de hora
+ * una semana no mide 7×24 h y la fecha caía en domingo a las 23:00.
  */
 export function getProximaJornada(inicio) {
   const now = new Date();
@@ -45,14 +48,16 @@ export function getProximaJornada(inicio) {
     return { numero: 1, fecha: new Date(inicio) };
   }
 
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const msPerWeek = 7 * msPerDay;
-  const weekNumber = Math.floor((now - inicio) / msPerWeek);
-  const thisMonday = new Date(inicio.getTime() + weekNumber * msPerWeek);
+  const masDias = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const hoy = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // round absorbe la hora de más o de menos del cambio de horario.
+  const dias = Math.round((hoy - inicio) / (24 * 60 * 60 * 1000));
+  const weekNumber = Math.floor(dias / 7);
+  const thisMonday = masDias(inicio, weekNumber * 7);
 
   // Si ya pasó el martes, la siguiente jornada es la de la semana que viene.
-  if (now >= new Date(thisMonday.getTime() + msPerDay)) {
-    return { numero: weekNumber + 2, fecha: new Date(thisMonday.getTime() + msPerWeek) };
+  if (now >= masDias(thisMonday, 1)) {
+    return { numero: weekNumber + 2, fecha: masDias(thisMonday, 7) };
   }
 
   return { numero: weekNumber + 1, fecha: thisMonday };
